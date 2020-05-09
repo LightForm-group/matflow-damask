@@ -1,0 +1,12 @@
+name: matflow_damask_env
+dependencies:
+- python>=3.6
+- pip
+- pylint
+- ipykernel
+- rope
+- autopep8
+- twine
+- wheel
+- sphinx
+- recommonmark
