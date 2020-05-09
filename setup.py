@@ -71,5 +71,4 @@ setup(
         'GitHub': 'https://github.com/LightForm-group/matflow-damask'
     },
     version=get_version(),
-    zip_safe=True,
 )
