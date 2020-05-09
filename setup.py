@@ -68,7 +68,7 @@ setup(
     name='matflow-damask',
     packages=find_packages(),
     project_urls={
-        'GitHub': 'https://github.com/LightForm-group/matflow_damask'
+        'GitHub': 'https://github.com/LightForm-group/matflow-damask'
     },
     version=get_version(),
     zip_safe=True,
