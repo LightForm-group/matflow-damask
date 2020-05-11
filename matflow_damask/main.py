@@ -21,11 +21,12 @@ from matflow_damask import (
     register_output_file,
 )
 
+
 @output_mapper('microstructure_seeds', 'generate_microstructure_seeds', 'random')
-def read_seeds_from_random(path):
+def read_seeds_from_random(seeds_path):
     'Parse the file from the `seeds_fromRandom` DAMASK command.'
 
-    header_lns = get_header(path)
+    header_lns = get_header(seeds_path)
     num_header_lns = len(header_lns)
 
     grid_size = None
@@ -36,7 +37,7 @@ def read_seeds_from_random(path):
         if ln.startswith('randomSeed'):
             random_seed = int(ln.split()[1])
 
-    data = np.loadtxt(path, skiprows=(num_header_lns + 1), ndmin=2)
+    data = np.loadtxt(seeds_path, skiprows=(num_header_lns + 1), ndmin=2)
     position = data[:, 0:3]
     eulers = data[:, 3:6]
 
@@ -49,10 +50,11 @@ def read_seeds_from_random(path):
 
     return out
 
+
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
-def read_damask_geom(path):
-    return read_geom(path)
+def read_damask_geom(geom_path):
+    return read_geom(geom_path)
 
 
 @input_mapper('load.load', 'simulate_volume_element_loading', 'CP_FFT')
@@ -72,8 +74,8 @@ def write_damask_material(path, material_properties, volume_element):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-def read_damask_table(path):
-    return read_table(path)
+def read_damask_table(table_path):
+    return read_table(table_path)
 
 
 @input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi')
@@ -95,6 +97,7 @@ def write_microstructure_seeds(path, microstructure_seeds):
     fmt = ['%20.16f'] * 6 + ['%10g']
     header = dedent(header).strip()
     np.savetxt(path, data, header=header, comments='', fmt=fmt)
+
 
 @input_mapper(
     'orientation.seeds',
@@ -119,6 +122,7 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
     fmt = ['%20.16f'] * 6 + ['%10g']
     header = dedent(header).strip()
     np.savetxt(path, data, header=header, comments='', fmt=fmt)
+
 
 @cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations')
 def format_rve_size(size):
