@@ -59,6 +59,8 @@ setup(
     """,
     install_requires=[
         'matflow',
+        'vtk>=8.1.2',  # Needed to specify a version to successfully install damask (?)
+        'damask',
         'damask-parse',
     ],
     license="MIT license",
