@@ -124,7 +124,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
             func(**op['args'])
 
         # Deal with specific options:
-        if op['opts'].get('add_mises', {}):
+        if op['opts'].get('add_Mises', {}):
 
             if op["name"] == 'add_Cauchy':
                 label = f'sigma'
@@ -138,10 +138,10 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
 
             else:
                 msg = (f'Operation "{op["name"]}" is not compatible with option '
-                       f'"add_mises".')
+                       f'"add_Mises".')
                 raise ValueError(msg)
 
-            sim_data.add_mises(label)
+            sim_data.add_Mises(label)
 
     volume_element_response = {}
     for inc_dat_spec in incremental_data:
