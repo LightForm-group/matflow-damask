@@ -4,6 +4,7 @@ from textwrap import dedent
 from pathlib import Path
 
 import numpy as np
+import pkg_resources
 from damask_parse import (
     read_geom,
     read_table,
@@ -12,7 +13,8 @@ from damask_parse import (
     write_material_config,
 )
 from damask import DADF5
-from damask_parse.utils import get_header
+from damask_parse.utils import get_header, parse_damask_spectral_version_info
+from damask_parse import __version__ as damask_parse_version
 
 from matflow_damask import (
     input_mapper,
@@ -20,6 +22,7 @@ from matflow_damask import (
     cli_format_mapper,
     func_mapper,
     register_output_file,
+    software_versions,
 )
 from matflow_damask.utils import get_HDF5_incremental_quantity
 
@@ -204,6 +207,18 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
 @cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations')
 def format_rve_size(size):
     return ' '.join(['{}'.format(i) for i in size])
+
+
+@software_versions()
+def get_versions():
+    'Get versions of pertinent software associated with this extension.'
+
+    out = {
+        'DAMASK_spectral': parse_damask_spectral_version_info(),
+        'damask (Python)': {'version': pkg_resources.get_distribution('damask').version},
+        'damask-parse (Python)': {'version': damask_parse_version},
+    }
+    return out
 
 
 register_output_file('VTR_file', 'geom.vtr', 'visualise_volume_element', 'VTK')
