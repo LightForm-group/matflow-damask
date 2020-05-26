@@ -210,11 +210,11 @@ def format_rve_size(size):
 
 
 @software_versions()
-def get_versions():
+def get_versions(executable='DAMASK_spectral'):
     'Get versions of pertinent software associated with this extension.'
 
     out = {
-        'DAMASK_spectral': parse_damask_spectral_version_info(),
+        'DAMASK_spectral': parse_damask_spectral_version_info(executable=executable),
         'damask (Python)': {'version': pkg_resources.get_distribution('damask').version},
         'damask-parse (Python)': {'version': damask_parse_version},
     }
