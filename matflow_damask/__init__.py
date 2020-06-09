@@ -13,7 +13,7 @@ from matflow.extensions import (
     register_output_file,
 )
 
-SOFTWARE = 'damask'
+SOFTWARE = 'DAMASK'
 
 input_mapper = partial(input_mapper, software=SOFTWARE)
 output_mapper = partial(output_mapper, software=SOFTWARE)
