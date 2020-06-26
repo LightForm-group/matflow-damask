@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.3] - 2020.06.26
+
+### Added
+
+- Add function mapper for generating a volume element via extrusion of a 2D microstructure image.
+
 ## [0.1.2] - 2020.06.09
 
 ### Fixed
