@@ -13,7 +13,11 @@ from damask_parse import (
     write_material_config,
 )
 from damask import DADF5
-from damask_parse.utils import get_header, parse_damask_spectral_version_info
+from damask_parse.utils import (
+    get_header,
+    parse_damask_spectral_version_info,
+    volume_element_from_2D_microstructure,
+)
 from damask_parse import __version__ as damask_parse_version
 
 from matflow_damask import (
@@ -207,6 +211,17 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
 @cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations')
 def format_rve_size(size):
     return ' '.join(['{}'.format(i) for i in size])
+
+
+@func_mapper(task='generate_volume_element', method='extrusion')
+def volume_element_from_microstructure_image(microstructure_image, depth):
+    out = {
+        'volume_element': volume_element_from_2D_microstructure(
+            microstructure_image,
+            depth
+        )
+    }
+    return out
 
 
 @software_versions()
