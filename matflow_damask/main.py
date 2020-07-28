@@ -214,11 +214,12 @@ def format_rve_size(size):
 
 
 @func_mapper(task='generate_volume_element', method='extrusion')
-def volume_element_from_microstructure_image(microstructure_image, depth):
+def volume_element_from_microstructure_image(microstructure_image, depth, image_axes):
     out = {
         'volume_element': volume_element_from_2D_microstructure(
             microstructure_image,
-            depth
+            depth, 
+            image_axes
         )
     }
     return out
