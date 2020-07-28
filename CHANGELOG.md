@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.4] - 2020.07.28
+
+### Changed
+
+- Add `image_axes` argument to function mapper function that generates an RVE via 2D microstructure extrusion: `volume_element_from_microstructure_image`.
+
 ## [0.1.3] - 2020.06.26
 
 ### Added
