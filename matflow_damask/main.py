@@ -1,5 +1,6 @@
 '`matflow_damask.main.py`'
 
+import json
 from textwrap import dedent
 from pathlib import Path
 
@@ -31,8 +32,33 @@ from matflow_damask import (
 from matflow_damask.utils import get_HDF5_incremental_quantity
 
 
+@input_mapper(
+    input_file='orientation_coordinate_system.json',
+    task='generate_volume_element',
+    method='random_voronoi'
+)
+def write_orientation_coordinate_system_from_seeds(path, microstructure_seeds):
+    with Path(path).open('w') as handle:
+        json.dump(microstructure_seeds['orientation_coordinate_system'], handle)
+
+
+@input_mapper(
+    input_file='orientation_coordinate_system.json',
+    task='generate_volume_element',
+    method='random_voronoi_from_orientations'
+)
+def write_orientation_coordinate_system_from_orientations(path, orientations):
+    with Path(path).open('w') as handle:
+        json.dump(orientations['orientation_coordinate_system'], handle)
+
+
+def read_orientation_coordinate_system(path):
+    with Path(path).open('r') as handle:
+        return json.load(handle)
+
+
 @output_mapper('microstructure_seeds', 'generate_microstructure_seeds', 'random')
-def read_seeds_from_random(seeds_path):
+def read_seeds_from_random(seeds_path, orientation_coordinate_system):
     'Parse the file from the `seeds_fromRandom` DAMASK command.'
 
     header_lns = get_header(seeds_path)
@@ -55,6 +81,7 @@ def read_seeds_from_random(seeds_path):
         'eulers': eulers,
         'grid_size': grid_size,
         'random_seed': random_seed,
+        'orientation_coordinate_system': orientation_coordinate_system,
     }
 
     return out
@@ -62,8 +89,15 @@ def read_seeds_from_random(seeds_path):
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
-def read_damask_geom(geom_path):
-    return read_geom(geom_path)
+def read_damask_geom(geom_path, ori_coord_system_path, model_coordinate_system):
+
+    volume_element = read_geom(geom_path)
+    volume_element['model_coordinate_system'] = model_coordinate_system
+
+    ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
+    volume_element['orientation_coordinate_system'] = ori_coord_sys
+
+    return volume_element
 
 
 @input_mapper('load.load', 'simulate_volume_element_loading', 'CP_FFT')
@@ -102,7 +136,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
                     sum_along_axes : int, optional
                         If specified, take the sum the array along this axis.
                     mean_along_axes: int, optional
-                        If specified, take the mean average of the array along this axis.        
+                        If specified, take the mean average of the array along this axis.
     operations : list of dict, optional
         List of methods to invoke on the DADF5 object. This is a list of dicts with the
         following keys:
@@ -218,7 +252,7 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
     out = {
         'volume_element': volume_element_from_2D_microstructure(
             microstructure_image,
-            depth, 
+            depth,
             image_axes
         )
     }
