@@ -58,7 +58,7 @@ def read_orientation_coordinate_system(path):
 
 
 @output_mapper('microstructure_seeds', 'generate_microstructure_seeds', 'random')
-def read_seeds_from_random(seeds_path, orientation_coordinate_system):
+def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_label):
     'Parse the file from the `seeds_fromRandom` DAMASK command.'
 
     header_lns = get_header(seeds_path)
@@ -82,6 +82,7 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system):
         'grid_size': grid_size,
         'random_seed': random_seed,
         'orientation_coordinate_system': orientation_coordinate_system,
+        'phase_label': phase_label,
     }
 
     return out
@@ -89,13 +90,21 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system):
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
-def read_damask_geom(geom_path, ori_coord_system_path, model_coordinate_system):
+def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path,
+                     model_coordinate_system):
 
     volume_element = read_geom(geom_path)
     volume_element['model_coordinate_system'] = model_coordinate_system
 
     ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
     volume_element['orientation_coordinate_system'] = ori_coord_sys
+
+    with Path(phase_label_path).open('r') as handle:
+        phase_label = handle.read().strip()
+
+    volume_element['phase_labels'] = np.array([phase_label])
+    num_grains = len(volume_element['orientations'])
+    volume_element['grain_phase_label_idx'] = np.zeros(num_grains).astype(int)
 
     return volume_element
 
@@ -194,6 +203,13 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
         volume_element_response.update({inc_dat_spec['name']: inc_dat})
 
     return volume_element_response
+
+
+@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi')
+@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations')
+def write_phase_label(path, microstructure_seeds):
+    with Path(path).open('w') as handle:
+        handle.write(f'{microstructure_seeds["phase_label"]}\n')
 
 
 @input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi')
