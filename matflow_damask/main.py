@@ -15,9 +15,10 @@ from damask_parse import (
 )
 from damask import DADF5
 from damask_parse.utils import (
-    get_header,
+    get_header_lines,
     parse_damask_spectral_version_info,
     volume_element_from_2D_microstructure,
+    add_volume_element_missing_texture,
 )
 from damask_parse import __version__ as damask_parse_version
 
@@ -61,7 +62,7 @@ def read_orientation_coordinate_system(path):
 def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_label):
     'Parse the file from the `seeds_fromRandom` DAMASK command.'
 
-    header_lns = get_header(seeds_path)
+    header_lns = get_header_lines(seeds_path)
     num_header_lns = len(header_lns)
 
     grid_size = None
@@ -91,7 +92,7 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
 def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path,
-                     model_coordinate_system):
+                     model_coordinate_system, buffer_phase_label):
 
     volume_element = read_geom(geom_path)
     volume_element['model_coordinate_system'] = model_coordinate_system
@@ -102,9 +103,11 @@ def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path,
     with Path(phase_label_path).open('r') as handle:
         phase_label = handle.read().strip()
 
-    volume_element['phase_labels'] = np.array([phase_label])
-    num_grains = len(volume_element['orientations'])
-    volume_element['grain_phase_label_idx'] = np.zeros(num_grains).astype(int)
+    phase_labels = [phase_label]
+    if buffer_phase_label:
+        phase_labels.append(buffer_phase_label)
+        add_volume_element_missing_texture(volume_element)
+    volume_element['phase_labels'] = np.array(phase_labels)
 
     return volume_element
 
@@ -121,8 +124,25 @@ def write_damask_geom(path, volume_element):
 
 
 @input_mapper('material.config', 'simulate_volume_element_loading', 'CP_FFT')
-def write_damask_material(path, material_properties, volume_element):
-    write_material_config(material_properties, Path(path).parent, volume_element)
+def write_damask_material(path, homogenization_schemes, homogenization_labels,
+                          volume_element, single_crystal_parameters, phases,
+                          texture_alignment_method):
+
+    # Merge single-crystal properties into phases:
+    for phase_label in phases.keys():
+        SC_params_name = phases[phase_label].pop('single_crystal_parameters', None)
+        if SC_params_name:
+            phases[phase_label].update(**single_crystal_parameters[SC_params_name])
+
+    write_material_config(
+        homog_schemes=homogenization_schemes,
+        phases=phases,
+        dir_path=Path(path).parent,
+        volume_element=volume_element,
+        separate_parts=True,
+        homog_labels=homogenization_labels,
+        texture_alignment_method=texture_alignment_method,
+    )
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
