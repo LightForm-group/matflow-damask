@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.1.5] - 2020.08.18
+
+### Added
+
+- Add support for specifying orientation and model coordinate systems with respect to e.g. RD/TD/ND.
+- Add phase label attribute to `microstructure_seeds` and add `phase_labels` and `grain_phase_label_idx` to `volume_element`.
+
+### Changed
+
+- Function `write_damask_material` updated to reflect upstream changes.
+
 ## [0.1.4] - 2020.07.28
 
 ### Changed
