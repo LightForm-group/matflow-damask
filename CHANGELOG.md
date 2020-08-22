@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.1.6] - 2020.08.22
+
+### Changed
+
+- Moved function `main.read_damask_hdf5_file` to `damask-parse` as `readers.read_HDF5_file`.
+- Moved function `utils.get_HDF5_incremental_quantity` to `damask-parse` as `utils.get_HDF5_incremental_quantity` (and fixed use of correct Numpy function for "sum_along_axes" transform.)
+
 ## [0.1.5] - 2020.08.18
 
 ### Added
