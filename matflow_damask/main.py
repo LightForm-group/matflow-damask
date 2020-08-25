@@ -13,6 +13,7 @@ from damask_parse import (
     write_load_case,
     write_geom,
     write_material_config,
+    write_numerics_config,
 )
 from damask import DADF5
 from damask_parse.utils import (
@@ -143,6 +144,11 @@ def write_damask_material(path, homogenization_schemes, homogenization_labels,
         homog_labels=homogenization_labels,
         texture_alignment_method=texture_alignment_method,
     )
+
+
+@input_mapper('numerics.config', 'simulate_volume_element_loading', 'CP_FFT')
+def write_damask_numerics(path, numerics):
+    write_numerics_config(Path(path).parent, numerics)
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
