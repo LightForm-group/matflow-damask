@@ -148,7 +148,8 @@ def write_damask_material(path, homogenization_schemes, homogenization_labels,
 
 @input_mapper('numerics.config', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_numerics(path, numerics):
-    write_numerics_config(Path(path).parent, numerics)
+    if numerics:
+        write_numerics_config(Path(path).parent, numerics)
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
