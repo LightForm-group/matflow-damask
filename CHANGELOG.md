@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.7] - 2020.08.25
+
+### Added
+
+- Add input mapper for writing the `numerics.config` file.
+
 ## [0.1.6] - 2020.08.22
 
 ### Changed
