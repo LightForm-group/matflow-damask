@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.8] - 2020.08.25
+
+### Fixed
+
+- Fix bug if numerics not specified in `write_damask_numerics` input mapper.
+
 ## [0.1.7] - 2020.08.25
 
 ### Added
