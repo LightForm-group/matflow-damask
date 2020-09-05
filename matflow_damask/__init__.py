@@ -8,7 +8,7 @@ from matflow.extensions import (
     input_mapper,
     output_mapper,
     cli_format_mapper,
-    func_mapper,
+    sources_mapper,
     software_versions,
     register_output_file,
 )
@@ -20,6 +20,6 @@ output_mapper = partial(output_mapper, software=SOFTWARE)
 cli_format_mapper = partial(cli_format_mapper, software=SOFTWARE)
 software_versions = partial(software_versions, software=SOFTWARE)
 register_output_file = partial(register_output_file, software=SOFTWARE)
-func_mapper = partial(func_mapper, software=SOFTWARE)
+sources_mapper = partial(sources_mapper, software=SOFTWARE)
 
 from matflow_damask import main

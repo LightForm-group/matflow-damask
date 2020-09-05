@@ -4,6 +4,7 @@ import json
 from textwrap import dedent
 from pathlib import Path
 
+import hickle
 import numpy as np
 import pkg_resources
 from damask_parse import (
@@ -19,16 +20,16 @@ from damask import DADF5
 from damask_parse.utils import (
     get_header_lines,
     parse_damask_spectral_version_info,
-    volume_element_from_2D_microstructure,
     add_volume_element_missing_texture,
 )
 from damask_parse import __version__ as damask_parse_version
+from matflow.scripting import get_wrapper_script
 
 from matflow_damask import (
     input_mapper,
     output_mapper,
     cli_format_mapper,
-    func_mapper,
+    sources_mapper,
     register_output_file,
     software_versions,
 )
@@ -215,16 +216,44 @@ def format_rve_size(size):
     return ' '.join(['{}'.format(i) for i in size])
 
 
-@func_mapper(task='generate_volume_element', method='extrusion')
-def volume_element_from_microstructure_image(microstructure_image, depth, image_axes):
+@sources_mapper(task='generate_volume_element', method='extrusion',
+                script='get_volume_element_from_microstructure_image')
+def get_volume_element_from_microstructure_image():
+
+    script_name = 'get_volume_element_from_microstructure_image.py'
+    snippets = [{'name': 'get_volume_element_from_microstructure_image.py'}]
+    outputs = ['volume_element']
     out = {
-        'volume_element': volume_element_from_2D_microstructure(
-            microstructure_image,
-            depth,
-            image_axes
-        )
+        'script': {
+            'content': get_wrapper_script(__package__, script_name, snippets, outputs),
+            'filename': script_name,
+        }
     }
     return out
+
+
+@input_mapper(
+    input_file='inputs.hdf5',
+    task='generate_volume_element',
+    method='extrusion',
+)
+def write_volume_element_microstructure_param_file(path, microstructure_image, depth,
+                                                   image_axes):
+    kwargs = {
+        'microstructure_image': microstructure_image,
+        'depth': depth,
+        'image_axes': image_axes,
+    }
+    hickle.dump(kwargs, path)
+
+
+@output_mapper(
+    output_name='volume_element',
+    task='generate_volume_element',
+    method='extrusion',
+)
+def read_load_case(path):
+    return hickle.load(path)
 
 
 @software_versions()
