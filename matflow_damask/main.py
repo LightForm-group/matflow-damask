@@ -73,7 +73,11 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
         if ln.startswith('grid'):
             grid_size = [int(j) for j in [i for i in ln.split()][1:][1::2]]
         if ln.startswith('randomSeed'):
-            random_seed = int(ln.split()[1])
+            try:
+                random_seed = int(ln.split()[1])
+            except ValueError:
+                # Random seed set to "None" in seeds_fromRandom 2.0.3-1097-ga7fca4df
+                pass
 
     data = np.loadtxt(seeds_path, skiprows=(num_header_lns + 1), ndmin=2)
     position = data[:, 0:3]
