@@ -245,6 +245,13 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
     return out
 
 
+@func_mapper(task='visualise_volume_element', method='VTK')
+def visualise_volume_element(volume_element):
+    from damask import Geom
+    geom_obj = Geom.from_file('geom.geom')
+    geom_obj.to_vtr('geom.vtr')
+
+
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
     'Get versions of pertinent software associated with this extension.'
