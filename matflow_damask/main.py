@@ -8,13 +8,13 @@ import hickle
 import numpy as np
 import pkg_resources
 from damask_parse import (
-    read_geom,
     read_table,
     read_HDF5_file,
     write_load_case,
     write_geom,
-    write_material_config,
+    write_material,
     write_numerics_config,
+    geom_to_volume_element,
 )
 from damask import DADF5
 from damask_parse.utils import (
@@ -93,23 +93,28 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
-def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path,
+def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
                      model_coordinate_system, buffer_phase_label):
 
-    volume_element = read_geom(geom_path)
-    volume_element['model_coordinate_system'] = model_coordinate_system
-
-    ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
-    volume_element['orientation_coordinate_system'] = ori_coord_sys
+    # TODO: coord systems:
+    # volume_element['model_coordinate_system'] = model_coordinate_system
+    # ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
+    # volume_element['orientation_coordinate_system'] = ori_coord_sys
 
     with Path(phase_label_path).open('r') as handle:
-        phase_label = handle.read().strip()
+        phase_labels = [handle.read().strip()]
 
-    phase_labels = [phase_label]
+    with Path(homog_label_path).open('r') as handle:
+        homog_label = handle.read().strip()
+
     if buffer_phase_label:
         phase_labels.append(buffer_phase_label)
-        add_volume_element_missing_texture(volume_element)
-    volume_element['phase_labels'] = np.array(phase_labels)
+
+    volume_element = geom_to_volume_element(
+        geom_path,
+        phase_labels=phase_labels,
+        homog_label=homog_label,
+    )
 
     return volume_element
 
@@ -126,9 +131,10 @@ def write_damask_geom(path, volume_element):
 
 
 @input_mapper('material.config', 'simulate_volume_element_loading', 'CP_FFT')
-def write_damask_material(path, homogenization_schemes, homogenization_labels,
-                          volume_element, single_crystal_parameters, phases,
-                          texture_alignment_method):
+def write_damask_material(path, homogenization_schemes, volume_element,
+                          single_crystal_parameters, phases, texture_alignment_method):
+
+    # TODO: sort out texture alignment
 
     # Merge single-crystal properties into phases:
     for phase_label in phases.keys():
@@ -136,14 +142,11 @@ def write_damask_material(path, homogenization_schemes, homogenization_labels,
         if SC_params_name:
             phases[phase_label].update(**single_crystal_parameters[SC_params_name])
 
-    write_material_config(
+    write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
-        dir_path=Path(path).parent,
         volume_element=volume_element,
-        separate_parts=True,
-        homog_labels=homogenization_labels,
-        texture_alignment_method=texture_alignment_method,
+        dir_path=Path(path).parent,
     )
 
 
@@ -163,6 +166,13 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
 def write_phase_label(path, microstructure_seeds):
     with Path(path).open('w') as handle:
         handle.write(f'{microstructure_seeds["phase_label"]}\n')
+
+
+@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi')
+@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations')
+def write_homog_label(path, homog_label):
+    with Path(path).open('w') as handle:
+        handle.write(f'{homog_label}\n')
 
 
 @input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi')
