@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.9] - 2020.09.29
+
+### Changed
+
+- Update for changes to damask-parse that support DAMASK v3.
+
 ## [0.1.8] - 2020.08.25
 
 ### Fixed
