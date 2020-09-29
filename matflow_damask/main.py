@@ -12,7 +12,7 @@ from damask_parse import (
     write_load_case,
     write_geom,
     write_material,
-    write_numerics_config,
+    write_numerics,
     geom_to_volume_element,
 )
 from damask_parse.utils import (
@@ -157,7 +157,7 @@ def write_damask_material(path, homogenization_schemes, volume_element,
 @input_mapper('numerics.config', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_numerics(path, numerics):
     if numerics:
-        write_numerics_config(Path(path).parent, numerics)
+        write_numerics(Path(path).parent, numerics)
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
