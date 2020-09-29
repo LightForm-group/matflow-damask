@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.10] - 2020.09.29
+
+### Changed
+
+- Use `write_numerics` instead of `write_numerics_config`.
+
 ## [0.1.9] - 2020.09.29
 
 ### Changed
