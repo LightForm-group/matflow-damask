@@ -42,7 +42,10 @@ from matflow_damask import (
 )
 def write_orientation_coordinate_system_from_seeds(path, microstructure_seeds):
     with Path(path).open('w') as handle:
-        json.dump(microstructure_seeds['orientation_coordinate_system'], handle)
+        json.dump(
+            microstructure_seeds['orientations']['orientation_coordinate_system'],
+            handle
+        )
 
 
 @input_mapper(
@@ -83,16 +86,19 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
     position = data[:, 0:3]
     eulers = data[:, 3:6]
 
-    out = {
+    microstructure_seeds = {
         'position': position,
-        'eulers': eulers,
+        'orientations': {
+            'type': 'euler',
+            'euler_angles': eulers,
+            'orientation_coordinate_system': orientation_coordinate_system,
+        },
         'grid_size': grid_size,
         'random_seed': random_seed,
-        'orientation_coordinate_system': orientation_coordinate_system,
         'phase_label': phase_label,
     }
 
-    return out
+    return microstructure_seeds
 
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
@@ -184,7 +190,7 @@ def write_microstructure_seeds(path, microstructure_seeds):
 
     grid_size = microstructure_seeds['grid_size']
     position = microstructure_seeds['position']
-    eulers = microstructure_seeds['eulers']
+    eulers = microstructure_seeds['orientations']['euler_angles']
 
     data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
 
