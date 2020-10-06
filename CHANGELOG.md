@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.1.11] - 2020.10.06
+
+### Changed
+
+- Standardise `orientations` key in `microstructure_seeds`.
+
+### Added
+
+- Add functions for `generate_volume_element` (`random_voronoi_2` and `random_voronoi_from_orientations_2`) using DAMASK Python package functions.
+
 ## [0.1.10] - 2020.09.29
 
 ### Changed
