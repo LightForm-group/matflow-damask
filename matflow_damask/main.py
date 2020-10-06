@@ -258,6 +258,94 @@ def visualise_volume_element(volume_element):
     geom_obj.to_vtr('geom.vtr')
 
 
+@func_mapper(task='generate_volume_element', method='random_voronoi_2')
+def generate_volume_element(microstructure_seeds, size, homog_label, scale_morphology,
+                            buffer_phase_size, buffer_phase_label):
+    out = generate_volume_element_random_voronoi(
+        microstructure_seeds,
+        size,
+        homog_label,
+        scale_morphology,
+        buffer_phase_size,
+        buffer_phase_label,
+        orientations=None,
+    )
+    return out
+
+
+@func_mapper(task='generate_volume_element', method='random_voronoi_from_orientations_2')
+def generate_volume_element(microstructure_seeds, size, homog_label, scale_morphology,
+                            buffer_phase_size, buffer_phase_label, orientations):
+    out = generate_volume_element_random_voronoi(
+        microstructure_seeds,
+        size,
+        homog_label,
+        scale_morphology,
+        buffer_phase_size,
+        buffer_phase_label,
+        orientations=orientations,
+    )
+    return out
+
+
+def generate_volume_element_random_voronoi(microstructure_seeds, size, homog_label,
+                                           scale_morphology, buffer_phase_size,
+                                           buffer_phase_label, orientations=None):
+    from damask import Geom
+
+    geom_obj = Geom.from_Voronoi_tessellation(
+        grid=np.array(microstructure_seeds['grid_size']),
+        size=np.array(size),
+        seeds=np.array(microstructure_seeds['position']),
+    )
+
+    if scale_morphology is not None:
+        # scale morphology: keep the same "elements per volume", but scale morphology
+
+        scale_morphology = np.array(scale_morphology)
+        original_size = geom_obj.get_size()
+        original_grid = geom_obj.get_grid()
+
+        new_size = original_size * scale_morphology
+        new_grid = original_grid * scale_morphology
+
+        geom_scaled = geom_obj.scale(new_grid)
+        geom_scaled.set_size(new_size)
+
+        geom_obj = geom_scaled
+
+    phase_labels = [microstructure_seeds['phase_label']]
+    if buffer_phase_size is not None:
+
+        original_grid = geom_obj.get_grid()
+        original_size = geom_obj.get_size()
+
+        new_grid = original_grid + np.array(buffer_phase_size)
+        new_size = original_size * (new_grid / original_grid)
+
+        geom_canvased = geom_obj.canvas(grid=new_grid)
+        geom_canvased.set_size(new_size)
+
+        geom_obj = geom_canvased
+        phase_labels.append(buffer_phase_label)
+
+    geom_obj.to_file('geom.geom')
+
+    if orientations is None:
+        oris = microstructure_seeds['orientations']['euler_angles']
+    else:
+        oris = orientations['euler_angles']
+
+    volume_element = geom_to_volume_element(
+        'geom.geom',
+        phase_labels=phase_labels,
+        homog_label=homog_label,
+        orientations=oris,
+    )
+
+    return {'volume_element': volume_element}
+
+
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
     'Get versions of pertinent software associated with this extension.'
