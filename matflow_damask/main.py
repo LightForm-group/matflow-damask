@@ -142,7 +142,7 @@ def write_damask_geom(path, volume_element):
     write_geom(volume_element, path)
 
 
-@input_mapper('material.config', 'simulate_volume_element_loading', 'CP_FFT')
+@input_mapper('material.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_material(path, homogenization_schemes, volume_element,
                           single_crystal_parameters,
                           single_crystal_parameter_perturbation, phases,
@@ -185,7 +185,7 @@ def write_damask_material(path, homogenization_schemes, volume_element,
     )
 
 
-@input_mapper('numerics.config', 'simulate_volume_element_loading', 'CP_FFT')
+@input_mapper('numerics.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_numerics(path, numerics):
     if numerics:
         write_numerics(Path(path).parent, numerics)
