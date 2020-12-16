@@ -148,9 +148,14 @@ def write_damask_material(path, homogenization_schemes, volume_element,
 
     # Merge single-crystal properties into phases:
     for phase_label in phases.keys():
-        SC_params_name = phases[phase_label].pop('single_crystal_parameters', None)
+
+        SC_params_name = phases[phase_label]['plasticity'].pop(
+            'single_crystal_parameters',
+            None
+        )
         if SC_params_name:
-            phases[phase_label].update(**single_crystal_parameters[SC_params_name])
+            SC_params = single_crystal_parameters[SC_params_name]
+            phases[phase_label]['plasticity'].update(**SC_params)
 
     write_material(
         homog_schemes=homogenization_schemes,
