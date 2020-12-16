@@ -354,16 +354,11 @@ def generate_volume_element_random_voronoi(microstructure_seeds, size, homog_lab
 
     geom_obj.to_file('geom.geom')
 
-    if orientations is None:
-        oris = microstructure_seeds['orientations']['euler_angles']
-    else:
-        oris = orientations['euler_angles']
-
     volume_element = geom_to_volume_element(
         'geom.geom',
         phase_labels=phase_labels,
         homog_label=homog_label,
-        orientations=oris,
+        orientations=(orientations or microstructure_seeds['orientations']),
     )
 
     return {'volume_element': volume_element}
