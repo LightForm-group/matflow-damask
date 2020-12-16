@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.1.12] - 2020.12.16
+
+### Changed
+
+- Add optional `single_crystal_parameter_perturbation` parameter to `simulate_volume_element_loading` task (used for parameter fitting).
+- Change material/numerics.config to material/numerics.yaml.
+
 ## [0.1.11] - 2020.10.06
 
 ### Changed
