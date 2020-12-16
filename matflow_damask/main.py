@@ -142,9 +142,27 @@ def write_damask_geom(path, volume_element):
 
 @input_mapper('material.config', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_material(path, homogenization_schemes, volume_element,
-                          single_crystal_parameters, phases, texture_alignment_method):
+                          single_crystal_parameters,
+                          single_crystal_parameter_perturbation, phases,
+                          texture_alignment_method):
 
     # TODO: sort out texture alignment
+
+    # Apply a perturbation to a specific single-crystal parameter:
+    if (
+        single_crystal_parameters and
+        single_crystal_parameter_perturbation and
+        single_crystal_parameter_perturbation['perturbation']
+    ):
+        single_crystal_parameters = copy.deepcopy(single_crystal_parameters)
+        scale_factor = (1 + single_crystal_parameter_perturbation['perturbation'])
+        address = single_crystal_parameter_perturbation.get('address')
+        set_by_path(
+            single_crystal_parameters,
+            address,
+            get_by_path(single_crystal_parameters, address) * scale_factor,
+        )
+    phases = copy.deepcopy(phases)
 
     # Merge single-crystal properties into phases:
     for phase_label in phases.keys():
