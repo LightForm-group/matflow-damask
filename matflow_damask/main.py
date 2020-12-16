@@ -1,5 +1,6 @@
 '`matflow_damask.main.py`'
 
+import copy
 import json
 from textwrap import dedent
 from pathlib import Path
@@ -33,6 +34,7 @@ from matflow_damask import (
     register_output_file,
     software_versions,
 )
+from matflow_damask.utils import get_by_path, set_by_path
 
 
 @input_mapper(
