@@ -301,8 +301,9 @@ def visualise_volume_element(volume_element):
 
 
 @func_mapper(task='generate_volume_element', method='random_voronoi_2')
-def generate_volume_element(microstructure_seeds, size, homog_label, scale_morphology,
-                            buffer_phase_size, buffer_phase_label):
+def generate_volume_element_random_voronoi_2(microstructure_seeds, size, homog_label,
+                                             scale_morphology, buffer_phase_size,
+                                             buffer_phase_label):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         size,
@@ -316,8 +317,11 @@ def generate_volume_element(microstructure_seeds, size, homog_label, scale_morph
 
 
 @func_mapper(task='generate_volume_element', method='random_voronoi_from_orientations_2')
-def generate_volume_element(microstructure_seeds, size, homog_label, scale_morphology,
-                            buffer_phase_size, buffer_phase_label, orientations):
+def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, size,
+                                                          homog_label, scale_morphology,
+                                                          buffer_phase_size,
+                                                          buffer_phase_label,
+                                                          orientations):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         size,
