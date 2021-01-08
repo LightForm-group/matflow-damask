@@ -94,6 +94,12 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
             'type': 'euler',
             'euler_angles': eulers,
             'orientation_coordinate_system': orientation_coordinate_system,
+            # DAMASK uses x//a alignment for hexagonal system (unlike the more
+            # common y//b):
+            'unit_cell_alignment': {
+                'x': 'a',
+                'z': 'c',
+            }
         },
         'grid_size': grid_size,
         'random_seed': random_seed,
@@ -240,6 +246,17 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
 
     grid_size = microstructure_seeds['grid_size']
     position = microstructure_seeds['position']
+
+    if (
+        'unit_cell_alignment' not in orientations or
+        'x' not in orientations['unit_cell_alignment'] or
+        orientations['unit_cell_alignment']['x'] != 'a'
+    ):
+        msg = ('Orientations to be written to a DAMASK seeds file must have '
+               'DAMASK-compatible `unit_cell_alignment`: x parallel to a.')
+        # TODO: allow conversion here.
+        raise NotImplementedError(msg)
+
     eulers = orientations['euler_angles']
 
     data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
