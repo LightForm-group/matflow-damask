@@ -19,7 +19,6 @@ from damask_parse import (
 from damask_parse.utils import (
     get_header_lines,
     parse_damask_spectral_version_info,
-    add_volume_element_missing_texture,
     volume_element_from_2D_microstructure,
 )
 from damask_parse import __version__ as damask_parse_version
