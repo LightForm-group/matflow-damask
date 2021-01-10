@@ -39,7 +39,7 @@ from matflow_damask.utils import get_by_path, set_by_path
 @input_mapper(
     input_file='orientation_coordinate_system.json',
     task='generate_volume_element',
-    method='random_voronoi'
+    method='random_voronoi_OLD'
 )
 def write_orientation_coordinate_system_from_seeds(path, microstructure_seeds):
     with Path(path).open('w') as handle:
@@ -52,7 +52,7 @@ def write_orientation_coordinate_system_from_seeds(path, microstructure_seeds):
 @input_mapper(
     input_file='orientation_coordinate_system.json',
     task='generate_volume_element',
-    method='random_voronoi_from_orientations'
+    method='random_voronoi_from_orientations_OLD'
 )
 def write_orientation_coordinate_system_from_orientations(path, orientations):
     with Path(path).open('w') as handle:
@@ -108,8 +108,8 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
     return microstructure_seeds
 
 
-@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi')
-@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations')
+@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
+@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
                      model_coordinate_system, buffer_phase_label):
 
@@ -201,21 +201,21 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
 
 
-@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi')
-@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations')
+@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
+@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def write_phase_label(path, microstructure_seeds):
     with Path(path).open('w') as handle:
         handle.write(f'{microstructure_seeds["phase_label"]}\n')
 
 
-@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi')
-@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations')
+@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
+@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def write_homog_label(path, homog_label):
     with Path(path).open('w') as handle:
         handle.write(f'{homog_label}\n')
 
 
-@input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi')
+@input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi_OLD')
 def write_microstructure_seeds(path, microstructure_seeds):
 
     grid_size = microstructure_seeds['grid_size']
@@ -239,7 +239,7 @@ def write_microstructure_seeds(path, microstructure_seeds):
 @input_mapper(
     'orientation.seeds',
     'generate_volume_element',
-    'random_voronoi_from_orientations'
+    'random_voronoi_from_orientations_OLD'
 )
 def write_microstructure_new_orientations(path, microstructure_seeds, orientations):
 
@@ -272,7 +272,7 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
     np.savetxt(path, data, header=header, comments='', fmt=fmt)
 
 
-@cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations')
+@cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def format_rve_size(size):
     return ' '.join(['{}'.format(i) for i in size])
 
@@ -299,7 +299,7 @@ def visualise_volume_element(volume_element):
     geom_obj.to_vtr('geom.vtr')
 
 
-@func_mapper(task='generate_volume_element', method='random_voronoi_2')
+@func_mapper(task='generate_volume_element', method='random_voronoi')
 def generate_volume_element_random_voronoi_2(microstructure_seeds, size, homog_label,
                                              scale_morphology, buffer_phase_size,
                                              buffer_phase_label):
@@ -315,7 +315,7 @@ def generate_volume_element_random_voronoi_2(microstructure_seeds, size, homog_l
     return out
 
 
-@func_mapper(task='generate_volume_element', method='random_voronoi_from_orientations_2')
+@func_mapper(task='generate_volume_element', method='random_voronoi_from_orientations')
 def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, size,
                                                           homog_label, scale_morphology,
                                                           buffer_phase_size,
