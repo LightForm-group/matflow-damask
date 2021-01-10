@@ -1,5 +1,20 @@
 # Change Log
 
+## [0.1.13] - 2020.01.10
+
+### Changed
+
+- Input and output mapper functions for writing/reading DAMASK microstructure seeds files have been updated to respect the `unit_cell_alignment` key of `orientations`.
+- Changed some `generate_volume_element` task method names:
+  - `random_voronoi` -> `random_voronoi_OLD`
+  - `random_voronoi_from_orientations` -> `random_voronoi_from_orientations_OLD`
+  - `random_voronoi_2` -> `random_voronoi`
+  - `random_voronoi_from_orientations_2` -> `random_voronoi_from_orientations`
+
+### Fixed
+
+- Fix function name used twice for function mappers for `generate_volume_element` using method `random_voronoi_2` and `random_voronoi_from_orientations_2`.
+
 ## [0.1.12] - 2020.12.16
 
 ### Changed
