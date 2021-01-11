@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.14] - 2020.01.11
+
+### Fixed
+
+- Use `pack=False` in DAMASK's `geom_obj.to_file` to ensure consistent format of geometry file in function `main.generate_volume_element_random_voronoi`.
+
 ## [0.1.13] - 2020.01.10
 
 ### Changed
