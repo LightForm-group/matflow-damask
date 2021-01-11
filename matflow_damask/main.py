@@ -374,7 +374,8 @@ def generate_volume_element_random_voronoi(microstructure_seeds, size, homog_lab
         geom_obj = geom_canvased
         phase_labels.append(buffer_phase_label)
 
-    geom_obj.to_file('geom.geom')
+    # specifying pack ensures consistent behaviour:
+    geom_obj.to_file('geom.geom', pack=False)
 
     volume_element = geom_to_volume_element(
         'geom.geom',
