@@ -92,6 +92,7 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
         'orientations': {
             'type': 'euler',
             'euler_angles': eulers,
+            'euler_degrees': True,
             'orientation_coordinate_system': orientation_coordinate_system,
             # DAMASK uses x//a alignment for hexagonal system (unlike the more
             # common y//b):
@@ -220,7 +221,10 @@ def write_microstructure_seeds(path, microstructure_seeds):
 
     grid_size = microstructure_seeds['grid_size']
     position = microstructure_seeds['position']
+
     eulers = microstructure_seeds['orientations']['euler_angles']
+    if not microstructure_seeds['orientations']['euler_degrees']:
+        eulers = np.rad2deg(eulers)
 
     data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
 
@@ -257,6 +261,8 @@ def write_microstructure_new_orientations(path, microstructure_seeds, orientatio
         raise NotImplementedError(msg)
 
     eulers = orientations['euler_angles']
+    if not orientations['euler_degrees']:
+        eulers = np.rad2deg(eulers)
 
     data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
 
