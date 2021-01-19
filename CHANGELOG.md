@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.15] - 2020.xx.xx
+
+### Fixed 
+ 
+- Include an `euler_degrees` bool dict item in `orientations` to signify if the dict item `euler_angles` is represented in degrees or radians.
+
 ## [0.1.14] - 2020.01.11
 
 ### Fixed
