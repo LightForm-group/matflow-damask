@@ -1,6 +1,9 @@
 # Change Log
 
-## [0.1.15] - 2020.xx.xx
+## [0.1.15] - 2020.01.19
+
+### Added
+- Add implementation of task `modify_volume_element` by method `add_buffer_zones`.
 
 ### Fixed 
  
