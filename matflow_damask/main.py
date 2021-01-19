@@ -20,6 +20,7 @@ from damask_parse.utils import (
     get_header_lines,
     parse_damask_spectral_version_info,
     volume_element_from_2D_microstructure,
+    add_volume_element_buffer_zones,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -293,6 +294,17 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
             homog_label,
             depth,
             image_axes,
+        )
+    }
+    return out
+
+
+@func_mapper(task='modify_volume_element', method='add_buffer_zones')
+def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes, 
+                                           phase_ids, phase_labels, homog_label, order):
+    out = {
+        'volume_element': add_volume_element_buffer_zones(
+            volume_element, buffer_sizes, phase_ids, phase_labels, homog_label, order
         )
     }
     return out
