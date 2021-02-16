@@ -72,11 +72,11 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
     header_lns = get_header_lines(seeds_path)
     num_header_lns = len(header_lns)
 
-    grid_size = None
+    size = None
     random_seed = None
     for ln in header_lns:
-        if ln.startswith('grid'):
-            grid_size = [int(j) for j in [i for i in ln.split()][1:][1::2]]
+        if ln.startswith('size'):
+            size = [float(j) for j in [i for i in ln.split()][1:][1::2]]
         if ln.startswith('randomSeed'):
             try:
                 random_seed = int(ln.split()[1])
@@ -102,7 +102,7 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
                 'z': 'c',
             }
         },
-        'grid_size': grid_size,
+        'size': size,
         'random_seed': random_seed,
         'phase_label': phase_label,
     }
@@ -111,7 +111,7 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
 
 
 @func_mapper(task='generate_microstructure_seeds', method='random_NEW')
-def seeds_from_random(size, num_grains, phase_label, grid_size=None, 
+def seeds_from_random(size, num_grains, phase_label, grid_size=None,
                       orientation_coordinate_system=None):
     from damask import seeds
     from damask import Rotation
@@ -121,7 +121,7 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
 
     position = seeds.from_random(size, num_grains, cells=grid_size)
     rotation = Rotation.from_random(shape=(num_grains,))
-    
+
     out = {
         'microstructure_seeds': {
             'position': position,
