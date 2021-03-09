@@ -199,8 +199,8 @@ def write_damask_numerics(path, numerics):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-def read_damask_hdf5_file(hdf5_path, incremental_data, field_data, operations=None):
-    return read_HDF5_file(hdf5_path, incremental_data, field_data, operations=operations)
+def read_damask_hdf5_file(hdf5_path, incremental_data, field_data, grain_data, operations=None):
+    return read_HDF5_file(hdf5_path, incremental_data, field_data, grain_data, operations=operations)
 
 
 @input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
