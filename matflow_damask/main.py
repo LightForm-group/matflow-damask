@@ -72,11 +72,11 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
     header_lns = get_header_lines(seeds_path)
     num_header_lns = len(header_lns)
 
-    grid_size = None
+    size = None
     random_seed = None
     for ln in header_lns:
-        if ln.startswith('grid'):
-            grid_size = [int(j) for j in [i for i in ln.split()][1:][1::2]]
+        if ln.startswith('size'):
+            size = [float(j) for j in [i for i in ln.split()][1:][1::2]]
         if ln.startswith('randomSeed'):
             try:
                 random_seed = int(ln.split()[1])
@@ -102,12 +102,45 @@ def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_labe
                 'z': 'c',
             }
         },
-        'grid_size': grid_size,
+        'size': size,
         'random_seed': random_seed,
         'phase_label': phase_label,
     }
 
     return microstructure_seeds
+
+
+@func_mapper(task='generate_microstructure_seeds', method='random_NEW')
+def seeds_from_random(size, num_grains, phase_label, grid_size=None,
+                      orientation_coordinate_system=None):
+    from damask import seeds
+    from damask import Rotation
+
+    size = np.array(size)
+    grid_size = grid_size and np.array(grid_size)
+
+    position = seeds.from_random(size, num_grains, cells=grid_size)
+    rotation = Rotation.from_random(shape=(num_grains,))
+
+    out = {
+        'microstructure_seeds': {
+            'position': position,
+            'orientations': {
+                'type': 'quat',
+                'quaternions': rotation.quaternion,
+                'orientation_coordinate_system': orientation_coordinate_system,
+                'unit_cell_alignment': {
+                    'x': 'a',
+                    'z': 'c',
+                },
+                'P': -1,
+            },
+            'size': size,
+            'random_seed': None,
+            'phase_label': phase_label,
+        }
+    }
+    return out
 
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
@@ -312,20 +345,28 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
-    from damask import Geom
-    geom_obj = Geom.from_file('geom.geom')
-    geom_obj.to_vtr('geom.vtr')
+    try:
+        from damask import Geom
+
+        geom_obj = Geom.from_file('geom.geom')
+        geom_obj.to_vtr('geom.vtr')
+    except ImportError:
+        from damask import Grid
+
+        grid_obj = Grid.load_ASCII('geom.geom')
+        grid_obj.save('geom.vtr')
 
 
 @func_mapper(task='generate_volume_element', method='random_voronoi')
-def generate_volume_element_random_voronoi_2(microstructure_seeds, size, homog_label,
-                                             scale_morphology, buffer_phase_size,
-                                             buffer_phase_label):
+def generate_volume_element_random_voronoi_2(microstructure_seeds, grid_size, homog_label,
+                                             scale_morphology, scale_update_size,
+                                             buffer_phase_size, buffer_phase_label):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
-        size,
+        grid_size,
         homog_label,
         scale_morphology,
+        scale_update_size,
         buffer_phase_size,
         buffer_phase_label,
         orientations=None,
@@ -334,16 +375,18 @@ def generate_volume_element_random_voronoi_2(microstructure_seeds, size, homog_l
 
 
 @func_mapper(task='generate_volume_element', method='random_voronoi_from_orientations')
-def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, size,
+def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, grid_size,
                                                           homog_label, scale_morphology,
+                                                          scale_update_size,
                                                           buffer_phase_size,
                                                           buffer_phase_label,
                                                           orientations):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
-        size,
+        grid_size,
         homog_label,
         scale_morphology,
+        scale_update_size,
         buffer_phase_size,
         buffer_phase_label,
         orientations=orientations,
@@ -351,49 +394,89 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
     return out
 
 
-def generate_volume_element_random_voronoi(microstructure_seeds, size, homog_label,
-                                           scale_morphology, buffer_phase_size,
-                                           buffer_phase_label, orientations=None):
-    from damask import Geom
+def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homog_label,
+                                           scale_morphology, scale_update_size, 
+                                           buffer_phase_size, buffer_phase_label, 
+                                           orientations=None):
+    try:
+        from damask import Geom
 
-    geom_obj = Geom.from_Voronoi_tessellation(
-        grid=np.array(microstructure_seeds['grid_size']),
-        size=np.array(size),
-        seeds=np.array(microstructure_seeds['position']),
-    )
+        geom_obj = Geom.from_Voronoi_tessellation(
+            grid=np.array(grid_size),
+            size=np.array(microstructure_seeds['size']),
+            seeds=np.array(microstructure_seeds['position']),
+        )
 
-    if scale_morphology is not None:
-        # scale morphology: keep the same "elements per volume", but scale morphology
+        if scale_morphology is not None:
+            scale_morphology = np.array(scale_morphology)
+            
+            original_grid = geom_obj.get_grid()
+            new_grid = original_grid * scale_morphology
+            geom_scaled = geom_obj.scale(new_grid)
 
-        scale_morphology = np.array(scale_morphology)
-        original_size = geom_obj.get_size()
-        original_grid = geom_obj.get_grid()
+            if scale_update_size:
+                original_size = geom_obj.get_size()
+                new_size = original_size * scale_morphology
+                geom_scaled.set_size(new_size)
 
-        new_size = original_size * scale_morphology
-        new_grid = original_grid * scale_morphology
+            geom_obj = geom_scaled
 
-        geom_scaled = geom_obj.scale(new_grid)
-        geom_scaled.set_size(new_size)
+        phase_labels = [microstructure_seeds['phase_label']]
+        if buffer_phase_size is not None:
+            original_grid = geom_obj.get_grid()
+            original_size = geom_obj.get_size()
 
-        geom_obj = geom_scaled
+            new_grid = original_grid + np.array(buffer_phase_size)
+            new_size = original_size * (new_grid / original_grid)
 
-    phase_labels = [microstructure_seeds['phase_label']]
-    if buffer_phase_size is not None:
+            geom_canvased = geom_obj.canvas(grid=new_grid)
+            geom_canvased.set_size(new_size)
 
-        original_grid = geom_obj.get_grid()
-        original_size = geom_obj.get_size()
+            geom_obj = geom_canvased
+            phase_labels.append(buffer_phase_label)
 
-        new_grid = original_grid + np.array(buffer_phase_size)
-        new_size = original_size * (new_grid / original_grid)
+        # specifying pack ensures consistent behaviour:
+        geom_obj.to_file('geom.geom', pack=False)
 
-        geom_canvased = geom_obj.canvas(grid=new_grid)
-        geom_canvased.set_size(new_size)
+    except ImportError:
+        from damask import Grid as Geom
 
-        geom_obj = geom_canvased
-        phase_labels.append(buffer_phase_label)
+        grid_obj = Geom.from_Voronoi_tessellation(
+            cells=np.array(grid_size),
+            size=np.array(microstructure_seeds['size']),
+            seeds=np.array(microstructure_seeds['position']),
+            material=np.arange(1, microstructure_seeds['position'].shape[0]+1)
+        )
 
-    # specifying pack ensures consistent behaviour:
-    geom_obj.to_file('geom.geom', pack=False)
+        if scale_morphology is not None:
+            scale_morphology = np.array(scale_morphology)
+            
+            original_cells = grid_obj.cells
+            new_cells = original_cells * scale_morphology
+            grid_scaled = grid_obj.scale(new_cells)
+
+            if scale_update_size:
+                original_size = grid_obj.size
+                new_size = original_size * scale_morphology
+                grid_scaled.size = new_size
+
+            grid_obj = grid_scaled
+
+        phase_labels = [microstructure_seeds['phase_label']]
+        if buffer_phase_size is not None:
+            original_cells = grid_obj.cells
+            original_size = grid_obj.size
+
+            new_cells = original_cells + np.array(buffer_phase_size)
+            new_size = original_size * (new_cells / original_cells)
+
+            grid_canvased = grid_obj.canvas(cells=new_cells)
+            grid_canvased.size = new_size
+
+            grid_obj = grid_canvased
+            phase_labels.append(buffer_phase_label)
+
+        grid_obj.save_ASCII('geom.geom')
 
     volume_element = geom_to_volume_element(
         'geom.geom',
