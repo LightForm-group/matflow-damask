@@ -342,6 +342,27 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
     }
     return out
 
+@func_mapper(task='modify_volume_element', method='new_orientations')
+def modify_volume_element_new_orientations(volume_element, volume_element_response):
+
+    old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
+    index = np.random.choice(old_oris.shape[0], old_oris.shape[0], replace=False)
+    volume_element_new['orientations']['quaternions'] = old_oris[index,:]
+    print("index array:")
+    print(index)
+
+    # return volume_element with new oris...
+    out = {
+        'volume_element': volume_element
+    }
+    return out
+
+@func_mapper(task='modify_volume_element', method='rescale_geometry')
+def modify_volume_element_rescale_geometry(volume_element, volume_element_response):
+    pass
+    # return volume_element with new size ...
+    # out = { 'volume_element': volume_element_new }
+    # return out
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
