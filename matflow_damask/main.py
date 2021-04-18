@@ -344,10 +344,10 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
-
+    
     old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
     index = np.random.choice(old_oris.shape[0], old_oris.shape[0], replace=False)
-    volume_element_new['orientations']['quaternions'] = old_oris[index,:]
+    volume_element['orientations']['quaternions'] = old_oris[index,:]
     print("index array:")
     print(index)
 
