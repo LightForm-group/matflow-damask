@@ -19,6 +19,7 @@ from damask_parse import (
 from damask_parse.utils import (
     get_header_lines,
     parse_damask_spectral_version_info,
+    validate_orientations,
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
 )
@@ -216,7 +217,6 @@ def write_damask_material(path, homogenization_schemes, volume_element,
         if SC_params_name:
             SC_params = single_crystal_parameters[SC_params_name]
             phases[phase_label]['plasticity'].update(**SC_params)
-
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
@@ -331,7 +331,6 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
     }
     return out
 
-
 @func_mapper(task='modify_volume_element', method='add_buffer_zones')
 def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes, 
                                            phase_ids, phase_labels, homog_label, order):
@@ -345,20 +344,19 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
 
+    np.set_printoptions(formatter={'float': lambda x: "{0:0.30f}".format(x)})
     # must ensure quats are to machine precision:
-    np.set_printoptions(formatter={'float': lambda x: "{0:0.15f}".format(x)})
     old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
-    print("old_oris: \n", old_oris)
     # randomly select orientations to pass to new VE:
     index = np.random.choice(old_oris.shape[0], old_oris.shape[0], replace=False)
-    volume_element['orientations']['quaternions'] = old_oris[index,:]
+    volume_element['orientations']['quaternions'] = np.around(old_oris, decimals = 30)
 
     # return volume_element with new oris...
-    out = {'volume_element': volume_element}
+    out = {'volume_element': volume_element} ; print("out:", out)
     return out
 
 @func_mapper(task='modify_volume_element', method='rescale_geometry')
-def modify_volume_element_rescale_geometry(volume_element, volume_element_response):
+def modify_volume_element_rescale_geometry(volume_element, volume_element_response, size):
     pass
     # return volume_element with new size ...
     # out = { 'volume_element': volume_element_new }
