@@ -344,15 +344,17 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
 
-    np.set_printoptions(formatter={'float': lambda x: "{0:0.30f}".format(x)})
-    # must ensure quats are to machine precision:
+    n_grains = volume_element['orientations']['quaternions'].shape[0] # 1024
+    n_fragments = volume_element_response['orientations']['data']['quaternions'][-1].shape[0] # 32768
+
     old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
-    # randomly select orientations to pass to new VE:
-    index = np.random.choice(old_oris.shape[0], old_oris.shape[0], replace=False)
-    volume_element['orientations']['quaternions'] = np.around(old_oris, decimals = 30)
+    random_index = np.random.randint(n_fragments, size=n_grains) ; print("randomindexsize", random_index.shape)
+    volume_element['orientations']['quaternions'] = old_oris[random_index, :]
+
+    print("old:", old_oris.shape, "\nnew:", old_oris[random_index, :].shape)
 
     # return volume_element with new oris...
-    out = {'volume_element': volume_element} ; print("out:", out)
+    out = {'volume_element': volume_element} ; print("volume_element['orientations']['quaternions']:\n", volume_element['orientations']['quaternions'])
     return out
 
 @func_mapper(task='modify_volume_element', method='rescale_geometry')
