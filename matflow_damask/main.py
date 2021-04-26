@@ -21,6 +21,7 @@ from damask_parse.utils import (
     parse_damask_spectral_version_info,
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
+    validate_orientations,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -172,6 +173,7 @@ def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_l
 
 
 @input_mapper('load.load', 'simulate_volume_element_loading', 'CP_FFT')
+@input_mapper('load.load', 'simulate_orientrations_loading', 'Taylor')
 def write_damask_load_case(path, load_case):
     write_load_case(path, load_case)
 
@@ -225,7 +227,50 @@ def write_damask_material(path, homogenization_schemes, volume_element,
     )
 
 
+@input_mapper('material.yaml', 'simulate_orientrations_loading', 'Taylor')
+def write_damask_taylor_material(path, orientations, phases):
+    # Convert orientations to quats and check size
+    orientations = validate_orientations(orientations)
+    num_oris = orientations.get('quaternions').shape[0]
+    if num_oris % 8 != 0:
+        msg = ('Number of orientations must be a multiple of 8.')
+        raise ValueError(msg)
+    num_oris_per_mat = num_oris // 8
+
+    # Check only 1 phase and get name
+    if len(phases) != 1:
+        msg = ('Only one phase should be specified.')
+        raise ValueError(msg)
+    pahse_name = list(phases.keys())[0]
+
+    volume_element = {
+        'element_material_idx': np.arange(8).reshape([2, 2, 2]),
+        'grid_size': np.array([2, 2, 2]),
+        'size': [1.0, 1.0, 1.0],
+
+        'constituent_material_idx': np.arange(8).repeat(num_oris_per_mat),
+        'constituent_material_fraction': np.full(num_oris, 1. / num_oris_per_mat),
+        'constituent_phase_label': np.full(num_oris, pahse_name),
+        'constituent_orientation_idx': np.arange(num_oris),
+        'material_homog': np.full(8, 'Taylor'),
+        'orientations': orientations,
+    }
+    homogenization_schemes = {'Taylor': {'mech': {
+        'type': 'isostrain',
+        'N_constituents': num_oris_per_mat,
+    }}}
+
+    write_geom(volume_element, Path(path).parent / 'geom.geom')
+    write_material(
+        homog_schemes=homogenization_schemes,
+        phases=phases,
+        volume_element=volume_element,
+        dir_path=Path(path).parent,
+    )
+
+
 @input_mapper('numerics.yaml', 'simulate_volume_element_loading', 'CP_FFT')
+@input_mapper('numerics.yaml', 'simulate_orientrations_loading', 'Taylor')
 def write_damask_numerics(path, numerics):
     if numerics:
         write_numerics(Path(path).parent, numerics)
@@ -234,6 +279,11 @@ def write_damask_numerics(path, numerics):
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
+
+
+@output_mapper('orientrations_response', 'simulate_orientrations_loading', 'Taylor')
+def read_damask_taylor_hdf5_file(hdf5_path):
+    return 1
 
 
 @input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
