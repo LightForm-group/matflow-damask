@@ -241,11 +241,13 @@ def write_damask_material(path, homogenization_schemes, volume_element,
             SC_params = single_crystal_parameters[SC_params_name]
             phases[phase_label]['plasticity'].update(**SC_params)
 
+    path = Path(path)
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
         volume_element=volume_element,
-        dir_path=Path(path).parent,
+        dir_path=path.parent,
+        name=path.name,
     )
 
 
@@ -282,12 +284,14 @@ def write_damask_taylor_material(path, orientations, phases):
         'N_constituents': num_oris_per_mat,
     }}}
 
-    write_geom(volume_element, Path(path).parent / 'geom.geom')
+    path = Path(path)
+    write_geom(volume_element, path.parent / 'geom.geom')
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
         volume_element=volume_element,
-        dir_path=Path(path).parent,
+        dir_path=path.parent,
+        name=path.name,
     )
 
 
@@ -295,7 +299,8 @@ def write_damask_taylor_material(path, orientations, phases):
 @input_mapper('numerics.yaml', 'simulate_orientrations_loading', 'Taylor')
 def write_damask_numerics(path, numerics):
     if numerics:
-        write_numerics(Path(path).parent, numerics)
+        path = Path(path)
+        write_numerics(path.parent, numerics, name=path.name)
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
