@@ -358,7 +358,7 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
 
 
 @func_mapper(task='modify_volume_element', method='add_buffer_zones')
-def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes, 
+def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
                                            phase_ids, phase_labels, homog_label, order):
     out = {
         'volume_element': add_volume_element_buffer_zones(
@@ -420,8 +420,8 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
 
 
 def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homog_label,
-                                           scale_morphology, scale_update_size, 
-                                           buffer_phase_size, buffer_phase_label, 
+                                           scale_morphology, scale_update_size,
+                                           buffer_phase_size, buffer_phase_label,
                                            orientations=None):
     try:
         from damask import Geom
@@ -434,7 +434,7 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
 
         if scale_morphology is not None:
             scale_morphology = np.array(scale_morphology)
-            
+
             original_grid = geom_obj.get_grid()
             new_grid = original_grid * scale_morphology
             geom_scaled = geom_obj.scale(new_grid)
@@ -475,7 +475,7 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
 
         if scale_morphology is not None:
             scale_morphology = np.array(scale_morphology)
-            
+
             original_cells = grid_obj.cells
             new_cells = original_cells * scale_morphology
             grid_scaled = grid_obj.scale(new_cells)
