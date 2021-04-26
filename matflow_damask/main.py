@@ -144,6 +144,28 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
     return out
 
 
+@func_mapper(task='sample_texture', method='from_random')
+def orientations_from_random(num_orientations,
+                             orientation_coordinate_system=None):
+    from damask import Rotation
+
+    rotation = Rotation.from_random(shape=(num_orientations,))
+
+    out = {
+        'orientations': {
+            'type': 'quat',
+            'quaternions': rotation.quaternion,
+            'orientation_coordinate_system': orientation_coordinate_system,
+            'unit_cell_alignment': {
+                'x': 'a',
+                'z': 'c',
+            },
+            'P': -1,
+        },
+    }
+    return out
+
+
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
