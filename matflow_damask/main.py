@@ -1,5 +1,6 @@
 '`matflow_damask.main.py`'
 
+import os
 import copy
 import json
 from textwrap import dedent
@@ -24,7 +25,7 @@ from damask_parse.utils import (
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
-
+from matflow.utils import working_directory
 from matflow_damask import (
     input_mapper,
     output_mapper,
@@ -231,8 +232,32 @@ def write_damask_numerics(path, numerics):
         write_numerics(Path(path).parent, numerics)
 
 
-@output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
+@output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT', CD_to_element_dir=True)
+def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None, visualise=None):
+
+    if visualise is not None:
+
+        if visualise is True:
+            visualise = {}
+
+        os.mkdir('viz')
+        with working_directory('viz'):
+
+            from damask import Result
+
+            result = Result(hdf5_path)
+
+            incs = visualise.pop('increments', None)
+            if incs:
+                if not isinstance(incs, list):
+                    incs = [incs]
+                if -1 in incs:
+                    incs[incs.index(-1)] = len(result.increments) - 1
+                result.pick('increments', incs)
+
+            print(f'calling result.to_vtk with kwargs: {visualise}')
+            result.to_vtk(**visualise)
+
     return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
 
 
