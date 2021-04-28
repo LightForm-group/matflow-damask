@@ -349,16 +349,8 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
-    try:
-        from damask import Geom
-
-        geom_obj = Geom.from_file('geom.geom')
-        geom_obj.to_vtr('geom.vtr')
-    except ImportError:
-        from damask import Grid
-
-        grid_obj = Grid.load_ASCII('geom.geom')
-        grid_obj.save('geom.vtr')
+    path = Path('geom.vtr')
+    write_geom(path.parent, volume_element, name=path.name)
 
 
 @func_mapper(task='generate_volume_element', method='random_voronoi')
