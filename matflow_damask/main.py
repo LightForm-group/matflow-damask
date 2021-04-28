@@ -171,15 +171,16 @@ def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_l
     return volume_element
 
 
-@input_mapper('load.load', 'simulate_volume_element_loading', 'CP_FFT')
+@input_mapper('load.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_load_case(path, load_case):
-    write_load_case(path, load_case)
+    path = Path(path)
+    write_load_case(path.parent, load_case, name=path.name)
 
 
-@input_mapper('geom.geom', 'simulate_volume_element_loading', 'CP_FFT')
-@input_mapper('geom.geom', 'visualise_volume_element', 'VTK')
+@input_mapper('geom.vtr', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_geom(path, volume_element):
-    write_geom(volume_element, path)
+    path = Path(path)
+    write_geom(path.parent, volume_element, name=path.name)
 
 
 @input_mapper('material.yaml', 'simulate_volume_element_loading', 'CP_FFT')
@@ -217,18 +218,21 @@ def write_damask_material(path, homogenization_schemes, volume_element,
             SC_params = single_crystal_parameters[SC_params_name]
             phases[phase_label]['plasticity'].update(**SC_params)
 
+    path = Path(path)
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
         volume_element=volume_element,
-        dir_path=Path(path).parent,
+        dir_path=path.parent,
+        name=path.name,
     )
 
 
 @input_mapper('numerics.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 def write_damask_numerics(path, numerics):
     if numerics:
-        write_numerics(Path(path).parent, numerics)
+        path = Path(path)
+        write_numerics(path.parent, numerics, name=path.name)
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
