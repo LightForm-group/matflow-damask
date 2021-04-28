@@ -37,80 +37,12 @@ from matflow_damask import (
 from matflow_damask.utils import get_by_path, set_by_path
 
 
-@input_mapper(
-    input_file='orientation_coordinate_system.json',
-    task='generate_volume_element',
-    method='random_voronoi_OLD'
-)
-def write_orientation_coordinate_system_from_seeds(path, microstructure_seeds):
-    with Path(path).open('w') as handle:
-        json.dump(
-            microstructure_seeds['orientations']['orientation_coordinate_system'],
-            handle
-        )
-
-
-@input_mapper(
-    input_file='orientation_coordinate_system.json',
-    task='generate_volume_element',
-    method='random_voronoi_from_orientations_OLD'
-)
-def write_orientation_coordinate_system_from_orientations(path, orientations):
-    with Path(path).open('w') as handle:
-        json.dump(orientations['orientation_coordinate_system'], handle)
-
-
 def read_orientation_coordinate_system(path):
     with Path(path).open('r') as handle:
         return json.load(handle)
 
 
-@output_mapper('microstructure_seeds', 'generate_microstructure_seeds', 'random')
-def read_seeds_from_random(seeds_path, orientation_coordinate_system, phase_label):
-    'Parse the file from the `seeds_fromRandom` DAMASK command.'
-
-    header_lns = get_header_lines(seeds_path)
-    num_header_lns = len(header_lns)
-
-    size = None
-    random_seed = None
-    for ln in header_lns:
-        if ln.startswith('size'):
-            size = [float(j) for j in [i for i in ln.split()][1:][1::2]]
-        if ln.startswith('randomSeed'):
-            try:
-                random_seed = int(ln.split()[1])
-            except ValueError:
-                # Random seed set to "None" in seeds_fromRandom 2.0.3-1097-ga7fca4df
-                pass
-
-    data = np.loadtxt(seeds_path, skiprows=(num_header_lns + 1), ndmin=2)
-    position = data[:, 0:3]
-    eulers = data[:, 3:6]
-
-    microstructure_seeds = {
-        'position': position,
-        'orientations': {
-            'type': 'euler',
-            'euler_angles': eulers,
-            'euler_degrees': True,
-            'orientation_coordinate_system': orientation_coordinate_system,
-            # DAMASK uses x//a alignment for hexagonal system (unlike the more
-            # common y//b):
-            'unit_cell_alignment': {
-                'x': 'a',
-                'z': 'c',
-            }
-        },
-        'size': size,
-        'random_seed': random_seed,
-        'phase_label': phase_label,
-    }
-
-    return microstructure_seeds
-
-
-@func_mapper(task='generate_microstructure_seeds', method='random_NEW')
+@func_mapper(task='generate_microstructure_seeds', method='random')
 def seeds_from_random(size, num_grains, phase_label, grid_size=None,
                       orientation_coordinate_system=None):
     from damask import seeds
@@ -141,34 +73,6 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
         }
     }
     return out
-
-
-@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
-@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
-def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
-                     model_coordinate_system, buffer_phase_label):
-
-    # TODO: coord systems:
-    # volume_element['model_coordinate_system'] = model_coordinate_system
-    # ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
-    # volume_element['orientation_coordinate_system'] = ori_coord_sys
-
-    with Path(phase_label_path).open('r') as handle:
-        phase_labels = [handle.read().strip()]
-
-    with Path(homog_label_path).open('r') as handle:
-        homog_label = handle.read().strip()
-
-    if buffer_phase_label:
-        phase_labels.append(buffer_phase_label)
-
-    volume_element = geom_to_volume_element(
-        geom_path,
-        phase_labels=phase_labels,
-        homog_label=homog_label,
-    )
-
-    return volume_element
 
 
 @input_mapper('load.yaml', 'simulate_volume_element_loading', 'CP_FFT')
@@ -238,87 +142,6 @@ def write_damask_numerics(path, numerics):
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
-
-
-@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
-@input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
-def write_phase_label(path, microstructure_seeds):
-    with Path(path).open('w') as handle:
-        handle.write(f'{microstructure_seeds["phase_label"]}\n')
-
-
-@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
-@input_mapper('homog_label.txt', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
-def write_homog_label(path, homog_label):
-    with Path(path).open('w') as handle:
-        handle.write(f'{homog_label}\n')
-
-
-@input_mapper('orientation.seeds', 'generate_volume_element', 'random_voronoi_OLD')
-def write_microstructure_seeds(path, microstructure_seeds):
-
-    grid_size = microstructure_seeds['grid_size']
-    position = microstructure_seeds['position']
-
-    eulers = microstructure_seeds['orientations']['euler_angles']
-    if not microstructure_seeds['orientations']['euler_degrees']:
-        eulers = np.rad2deg(eulers)
-
-    data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
-
-    header = f"""
-        3 header
-        grid a {grid_size[0]} b {grid_size[1]} c {grid_size[2]}
-        microstructures {len(data)}
-        1_pos 2_pos 3_pos 1_euler 2_euler 3_euler microstructure
-    """
-
-    fmt = ['%20.16f'] * 6 + ['%10g']
-    header = dedent(header).strip()
-    np.savetxt(path, data, header=header, comments='', fmt=fmt)
-
-
-@input_mapper(
-    'orientation.seeds',
-    'generate_volume_element',
-    'random_voronoi_from_orientations_OLD'
-)
-def write_microstructure_new_orientations(path, microstructure_seeds, orientations):
-
-    grid_size = microstructure_seeds['grid_size']
-    position = microstructure_seeds['position']
-
-    if (
-        'unit_cell_alignment' not in orientations or
-        'x' not in orientations['unit_cell_alignment'] or
-        orientations['unit_cell_alignment']['x'] != 'a'
-    ):
-        msg = ('Orientations to be written to a DAMASK seeds file must have '
-               'DAMASK-compatible `unit_cell_alignment`: x parallel to a.')
-        # TODO: allow conversion here.
-        raise NotImplementedError(msg)
-
-    eulers = orientations['euler_angles']
-    if not orientations['euler_degrees']:
-        eulers = np.rad2deg(eulers)
-
-    data = np.hstack([position, eulers, np.arange(1, len(position) + 1)[:, None]])
-
-    header = f"""
-        3 header
-        grid a {grid_size[0]} b {grid_size[1]} c {grid_size[2]}
-        microstructures {len(data)}
-        1_pos 2_pos 3_pos 1_euler 2_euler 3_euler microstructure
-    """
-
-    fmt = ['%20.16f'] * 6 + ['%10g']
-    header = dedent(header).strip()
-    np.savetxt(path, data, header=header, comments='', fmt=fmt)
-
-
-@cli_format_mapper('size', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
-def format_rve_size(size):
-    return ' '.join(['{}'.format(i) for i in size])
 
 
 @func_mapper(task='generate_volume_element', method='extrusion')
