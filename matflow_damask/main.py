@@ -304,13 +304,9 @@ def write_damask_numerics(path, numerics):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
+@output_mapper('orientrations_response', 'simulate_orientrations_loading', 'Taylor')
 def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
-
-
-@output_mapper('orientrations_response', 'simulate_orientrations_loading', 'Taylor')
-def read_damask_taylor_hdf5_file(hdf5_path):
-    return 1
 
 
 @input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
