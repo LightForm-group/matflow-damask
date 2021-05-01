@@ -217,85 +217,43 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
                                            scale_morphology, scale_update_size,
                                            buffer_phase_size, buffer_phase_label,
                                            orientations=None):
-    try:
-        from damask import Geom
+    from damask import Grid
 
-        geom_obj = Geom.from_Voronoi_tessellation(
-            grid=np.array(grid_size),
-            size=np.array(microstructure_seeds['size']),
-            seeds=np.array(microstructure_seeds['position']),
-        )
+    grid_obj = Grid.from_Voronoi_tessellation(
+        cells=np.array(grid_size),
+        size=np.array(microstructure_seeds['size']),
+        seeds=np.array(microstructure_seeds['position'])
+    )
 
-        if scale_morphology is not None:
-            scale_morphology = np.array(scale_morphology)
+    if scale_morphology is not None:
+        scale_morphology = np.array(scale_morphology)
 
-            original_grid = geom_obj.get_grid()
-            new_grid = original_grid * scale_morphology
-            geom_scaled = geom_obj.scale(new_grid)
+        original_cells = grid_obj.cells
+        new_cells = original_cells * scale_morphology
+        grid_scaled = grid_obj.scale(new_cells)
 
-            if scale_update_size:
-                original_size = geom_obj.get_size()
-                new_size = original_size * scale_morphology
-                geom_scaled.set_size(new_size)
-
-            geom_obj = geom_scaled
-
-        phase_labels = [microstructure_seeds['phase_label']]
-        if buffer_phase_size is not None:
-            original_grid = geom_obj.get_grid()
-            original_size = geom_obj.get_size()
-
-            new_grid = original_grid + np.array(buffer_phase_size)
-            new_size = original_size * (new_grid / original_grid)
-
-            geom_canvased = geom_obj.canvas(grid=new_grid)
-            geom_canvased.set_size(new_size)
-
-            geom_obj = geom_canvased
-            phase_labels.append(buffer_phase_label)
-
-        # specifying pack ensures consistent behaviour:
-        geom_obj.to_file('geom.geom', pack=False)
-
-    except ImportError:
-        from damask import Grid as Geom
-
-        grid_obj = Geom.from_Voronoi_tessellation(
-            cells=np.array(grid_size),
-            size=np.array(microstructure_seeds['size']),
-            seeds=np.array(microstructure_seeds['position']),
-            material=np.arange(1, microstructure_seeds['position'].shape[0]+1)
-        )
-
-        if scale_morphology is not None:
-            scale_morphology = np.array(scale_morphology)
-
-            original_cells = grid_obj.cells
-            new_cells = original_cells * scale_morphology
-            grid_scaled = grid_obj.scale(new_cells)
-
-            if scale_update_size:
-                original_size = grid_obj.size
-                new_size = original_size * scale_morphology
-                grid_scaled.size = new_size
-
-            grid_obj = grid_scaled
-
-        phase_labels = [microstructure_seeds['phase_label']]
-        if buffer_phase_size is not None:
-            original_cells = grid_obj.cells
+        if scale_update_size:
             original_size = grid_obj.size
+            new_size = original_size * scale_morphology
+            grid_scaled.size = new_size
 
-            new_cells = original_cells + np.array(buffer_phase_size)
-            new_size = original_size * (new_cells / original_cells)
+        grid_obj = grid_scaled
 
-            grid_canvased = grid_obj.canvas(cells=new_cells)
-            grid_canvased.size = new_size
+    phase_labels = [microstructure_seeds['phase_label']]
+    if buffer_phase_size is not None:
+        original_cells = grid_obj.cells
+        original_size = grid_obj.size
 
-            grid_obj = grid_canvased
-            phase_labels.append(buffer_phase_label)
+        new_cells = original_cells + np.array(buffer_phase_size)
+        new_size = original_size * (new_cells / original_cells)
 
-        grid_obj.save_ASCII('geom.geom')
+        grid_canvased = grid_obj.canvas(cells=new_cells)
+        grid_canvased.size = new_size
+
+        grid_obj = grid_canvased
+        phase_labels.append(buffer_phase_label)
+
+    grid_obj.save_ASCII('geom.geom')
 
     volume_element = geom_to_volume_element(
         'geom.geom',
