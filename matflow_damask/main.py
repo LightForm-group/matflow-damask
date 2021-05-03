@@ -184,13 +184,13 @@ def write_damask_taylor_material(path, orientations, phases):
         'material_homog': np.full(8, 'Taylor'),
         'orientations': orientations,
     }
-    homogenization_schemes = {'Taylor': {'mech': {
-        'type': 'isostrain',
+    homogenization_schemes = {'Taylor': {
+        'mechanical': {'type': 'isostrain'},
         'N_constituents': num_oris_per_mat,
-    }}}
+    }}
 
     path = Path(path)
-    write_geom(volume_element, path.parent / 'geom.geom')
+    write_geom(path.parent, volume_element, name='geom.vtr')
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
