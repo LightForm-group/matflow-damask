@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.16] - 2021.04.10
+
+### Added
+
+- Add implementation of task `generate_microstructure_seeds` with method `random_NEW` to use DAMASK library functions instead of command line script which has been removed in DAMASK v3a2.
+
 ## [0.1.15] - 2020.01.19
 
 ### Added
