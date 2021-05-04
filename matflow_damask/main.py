@@ -212,7 +212,8 @@ def write_damask_numerics(path, numerics):
 @output_mapper('orientrations_response', 'simulate_orientrations_loading', 'Taylor')
 def read_damask_hdf5_file(hdf5_path, incremental_data=None, field_data=None,
                           grain_data=None, operations=None):
-    return read_HDF5_file(hdf5_path, incremental_data, field_data, grain_data,
+    return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
+                          field_data=field_data, grain_data=grain_data,
                           operations=operations)
 
 
