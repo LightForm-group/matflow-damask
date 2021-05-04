@@ -99,7 +99,7 @@ def orientations_from_random(num_orientations,
 
 
 @input_mapper('load.yaml', 'simulate_volume_element_loading', 'CP_FFT')
-@input_mapper('load.yaml', 'simulate_orientrations_loading', 'Taylor')
+@input_mapper('load.yaml', 'simulate_orientations_loading', 'Taylor')
 def write_damask_load_case(path, load_case):
     path = Path(path)
     write_load_case(path.parent, load_case, name=path.name)
@@ -156,7 +156,7 @@ def write_damask_material(path, homogenization_schemes, volume_element,
     )
 
 
-@input_mapper('material.yaml', 'simulate_orientrations_loading', 'Taylor')
+@input_mapper('material.yaml', 'simulate_orientations_loading', 'Taylor')
 def write_damask_taylor_material(path, orientations, phases):
     # Convert orientations to quats and check size
     orientations = validate_orientations(orientations)
@@ -201,7 +201,7 @@ def write_damask_taylor_material(path, orientations, phases):
 
 
 @input_mapper('numerics.yaml', 'simulate_volume_element_loading', 'CP_FFT')
-@input_mapper('numerics.yaml', 'simulate_orientrations_loading', 'Taylor')
+@input_mapper('numerics.yaml', 'simulate_orientations_loading', 'Taylor')
 def write_damask_numerics(path, numerics):
     if numerics:
         path = Path(path)
@@ -209,11 +209,16 @@ def write_damask_numerics(path, numerics):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-@output_mapper('orientrations_response', 'simulate_orientrations_loading', 'Taylor')
 def read_damask_hdf5_file(hdf5_path, incremental_data=None, field_data=None,
                           grain_data=None, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
                           field_data=field_data, grain_data=grain_data,
+                          operations=operations)
+
+
+@output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
+def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, operations=None):
+    return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
                           operations=operations)
 
 
