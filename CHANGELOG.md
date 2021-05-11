@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.17] - 2021.05.11
+
+### Added
+
+- Add visualise option to `simulate_volume_element_loading` output mapper to generate VTK file using DAMASK.
+
 ## [0.1.16] - 2021.04.10
 
 ### Added

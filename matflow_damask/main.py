@@ -1,5 +1,6 @@
 '`matflow_damask.main.py`'
 
+import os
 import copy
 import json
 from textwrap import dedent
@@ -24,7 +25,7 @@ from damask_parse.utils import (
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
-
+from matflow.utils import working_directory
 from matflow_damask import (
     input_mapper,
     output_mapper,
@@ -232,8 +233,37 @@ def write_damask_numerics(path, numerics):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None):
-    return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
+def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None, visualise=None):
+
+    out = read_HDF5_file(hdf5_path, incremental_data, operations=operations)
+
+    if visualise is not None:
+
+        if visualise is True:
+            visualise = {}
+
+        os.mkdir('viz')
+        with working_directory('viz'):
+
+            from damask import Result
+
+            result = Result(hdf5_path)
+
+            incs = visualise.pop('increments', None)
+            if incs:
+                if not isinstance(incs, list):
+                    incs = [incs]
+                incs_normed = []
+                for i in incs:
+                    if i >= 0:
+                        i_normed = i
+                    else:
+                        i_normed = len(result.increments) + i
+                    incs_normed.append(i_normed)
+                result.pick('increments', incs_normed)
+            result.to_vtk(**visualise)
+
+    return out
 
 
 @input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
