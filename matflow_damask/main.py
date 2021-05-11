@@ -232,8 +232,10 @@ def write_damask_numerics(path, numerics):
         write_numerics(Path(path).parent, numerics)
 
 
-@output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT', CD_to_element_dir=True)
+@output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None, visualise=None):
+
+    out = read_HDF5_file(hdf5_path, incremental_data, operations=operations)
 
     if visualise is not None:
 
@@ -251,14 +253,17 @@ def read_damask_hdf5_file(hdf5_path, incremental_data, operations=None, visualis
             if incs:
                 if not isinstance(incs, list):
                     incs = [incs]
-                if -1 in incs:
-                    incs[incs.index(-1)] = len(result.increments) - 1
-                result.pick('increments', incs)
-
-            print(f'calling result.to_vtk with kwargs: {visualise}')
+                incs_normed = []
+                for i in incs:
+                    if i >= 0:
+                        i_normed = i
+                    else:
+                        i_normed = len(result.increments) + i
+                    incs_normed.append(i_normed)
+                result.pick('increments', incs_normed)
             result.to_vtk(**visualise)
 
-    return read_HDF5_file(hdf5_path, incremental_data, operations=operations)
+    return out
 
 
 @input_mapper('phase_label.txt', 'generate_volume_element', 'random_voronoi_OLD')
