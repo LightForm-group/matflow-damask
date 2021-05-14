@@ -388,7 +388,7 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     return out
 
 @func_mapper(task='modify_volume_element', method='rescale_geometry')
-def modify_volume_element_rescale_geometry(volume_element, load_case):
+def modify_volume_element_geometry(volume_element, load_case):
     pass
     # return volume_element with new size ...
     # out = { 'volume_element': volume_element_new }
