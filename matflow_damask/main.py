@@ -209,16 +209,20 @@ def write_damask_numerics(path, numerics):
 
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
-def read_damask_hdf5_file(hdf5_path, incremental_data=None, field_data=None,
-                          grain_data=None, operations=None):
+def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
+                          phase_data=None, field_data=None, grain_data=None,
+                          operations=None):
     return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
+                          volume_data=volume_data, phase_data=phase_data,
                           field_data=field_data, grain_data=grain_data,
                           operations=operations)
 
 
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
-def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, operations=None):
+def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
+                            phase_data=None, operations=None):
     return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
+                          volume_data=volume_data, phase_data=phase_data,
                           operations=operations)
 
 
