@@ -374,25 +374,30 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
 
-    n_grains = volume_element['orientations']['quaternions'].shape[0] # 1024
-    n_fragments = volume_element_response['orientations']['data']['quaternions'][-1].shape[0] # 32768
+    n_grains = volume_element['orientations']['quaternions'].shape[0]
+    n_fragments = volume_element_response['orientations']['data']['quaternions'][-1].shape[0]
 
     old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
-    random_index = np.random.randint(n_fragments, size=n_grains) ; print("randomindexsize", random_index.shape)
+    random_index = np.random.randint(n_fragments, size=n_grains) ; print("randomindex array size: ", random_index.shape)
     volume_element['orientations']['quaternions'] = old_oris[random_index, :]
 
-    print("old:", old_oris.shape, "\nnew:", old_oris[random_index, :].shape)
+    print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
 
     # return volume_element with new oris...
     out = {'volume_element': volume_element} ; print("volume_element['orientations']['quaternions']:\n", volume_element['orientations']['quaternions'])
     return out
 
-@func_mapper(task='modify_volume_element', method='rescale_geometry')
-def modify_volume_element_geometry(volume_element, load_case):
-    pass
+@func_mapper(task='modify_volume_element', method='geometry')
+def modify_volume_element_geometry(volume_element, volume_element_response):
+
+    print("\nold_geomsize:", volume_element['size']) # DEBUG
+    volume_element['size'] = np.matmul(volume_element_response['def_grad']['data'][-1], volume_element['size'])
+    print("\nnew_geomsize:", volume_element['size']) # DEBUG
+    
     # return volume_element with new size ...
-    # out = { 'volume_element': volume_element_new }
-    # return out
+    out = { 'volume_element': volume_element }
+    return out
+    
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
