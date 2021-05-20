@@ -145,6 +145,16 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
     return out
 
 
+@output_mapper('volume_element', 'generate_volume_element', 'from_damask_input_files')
+def generate_volume_element_from_damask_input_files(geom_path, material_path):
+    # volume_element = geom_to_volume_element(geom_path)
+    # material_data = read_material(material_path)
+    # volume_element['orientations'] = material_data['volume_element']['orientations']
+    # volume_element['phase_labels'] = material_data['phases']
+    #
+    pass
+
+
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
 def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
