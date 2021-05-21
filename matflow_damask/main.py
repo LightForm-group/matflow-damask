@@ -159,9 +159,8 @@ def generate_volume_element_from_damask_input_files(geom_path, material_path):
         'size': geom_dat['size'],
         **material_data['volume_element'],    
 }
-    print('volume_element:\n', volume_element.keys())
     volume_element = validate_volume_element(volume_element)
-    out = {'volume_element': volume_element} ; #print(out)
+    out = {'volume_element': volume_element}
     return out
 
 
