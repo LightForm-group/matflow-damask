@@ -382,8 +382,8 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     volume_element['orientations']['quaternions'] = old_oris[random_index, :]
 
     print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
-
-    out = {'volume_element': volume_element} ; print("volume_element['orientations']['quaternions']:\n", volume_element['orientations']['quaternions'])
+    
+    out = {'volume_element': volume_element}
     return out
 
 @func_mapper(task='modify_volume_element', method='geometry')
