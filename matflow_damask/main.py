@@ -375,7 +375,7 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
 
     n_grains = volume_element['orientations']['quaternions'].shape[0]
-    n_fragments = volume_element_response['orientations']['data']['quaternions'][-1].shape[0]
+    n_fragments = volume_element_response['orientations']['data']['quaternions'].shape[1]
 
     old_oris = volume_element_response['orientations']['data']['quaternions'][-1]
     random_index = np.random.randint(n_fragments, size=n_grains) ; print("randomindex array size: ", random_index.shape)
