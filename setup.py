@@ -37,7 +37,7 @@ def get_changelog():
 
 
 setup(
-    author="Adam J. Plowman, Michael D. Atkinson",
+    author="Adam J. Plowman, Michael D. Atkinson, Guy L. P. Bowker",
     author_email='adam.plowman@manchester.ac.uk',
     python_requires='>=3.6',
     classifiers=[
