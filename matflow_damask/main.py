@@ -14,7 +14,6 @@ from damask_parse import (
     write_geom,
     write_material,
     write_numerics,
-    geom_to_volume_element,
 )
 from damask_parse.utils import (
     get_header_lines,
@@ -22,6 +21,7 @@ from damask_parse.utils import (
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
     validate_orientations,
+    validate_volume_element,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -335,15 +335,15 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
         grid_obj = grid_canvased
         phase_labels.append(buffer_phase_label)
 
-    grid_obj.save_ASCII('geom.geom')
-
-    volume_element = geom_to_volume_element(
-        'geom.geom',
-        phase_labels=phase_labels,
-        homog_label=homog_label,
-        orientations=(orientations or microstructure_seeds['orientations']),
-    )
-
+    volume_element = {
+        'orientations': orientations or microstructure_seeds['orientations'],
+        'element_material_idx': grid_obj.material,
+        'grid_size': grid_obj.cells.tolist(),
+        'size': grid_obj.size.astype(float).tolist(),
+        'phase_labels': phase_labels,
+        'homog_label': homog_label,
+    }
+    volume_element = validate_volume_element(volume_element)
     return {'volume_element': volume_element}
 
 
