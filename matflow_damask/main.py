@@ -10,6 +10,8 @@ import hickle
 import numpy as np
 import pkg_resources
 from damask_parse import (
+    read_geom,
+    read_material,
     read_HDF5_file,
     write_load_case,
     write_geom,
@@ -23,6 +25,7 @@ from damask_parse.utils import (
     validate_orientations,
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
+    validate_volume_element,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -145,14 +148,21 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
     return out
 
 
-@output_mapper('volume_element', 'generate_volume_element', 'from_damask_input_files')
+@func_mapper(task='generate_volume_element', method='from_damask_input_files')
 def generate_volume_element_from_damask_input_files(geom_path, material_path):
-    # volume_element = geom_to_volume_element(geom_path)
-    # material_data = read_material(material_path)
-    # volume_element['orientations'] = material_data['volume_element']['orientations']
-    # volume_element['phase_labels'] = material_data['phases']
-    #
-    pass
+    
+    geom_dat = read_geom(geom_path)
+    material_data = read_material(material_path)
+    volume_element = {
+        'element_material_idx': geom_dat['element_material_idx'],
+        'grid_size': geom_dat['grid_size'],
+        'size': geom_dat['size'],
+        **material_data['volume_element'],    
+}
+    print('volume_element:\n', volume_element.keys())
+    volume_element = validate_volume_element(volume_element)
+    out = {'volume_element': volume_element} ; #print(out)
+    return out
 
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
