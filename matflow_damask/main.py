@@ -1,5 +1,6 @@
 '`matflow_damask.main.py`'
 
+import os
 import copy
 import json
 from textwrap import dedent
@@ -18,6 +19,7 @@ from damask_parse import (
 from damask_parse.utils import (
     get_header_lines,
     parse_damask_spectral_version_info,
+    validate_orientations,
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
     validate_orientations,
@@ -25,7 +27,7 @@ from damask_parse.utils import (
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
-
+from matflow.utils import working_directory
 from matflow_damask import (
     input_mapper,
     output_mapper,
@@ -191,6 +193,7 @@ def write_damask_taylor_material(path, orientations, phases):
 
     path = Path(path)
     write_geom(path.parent, volume_element, name='geom.vtr')
+
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
@@ -211,11 +214,40 @@ def write_damask_numerics(path, numerics):
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                           phase_data=None, field_data=None, grain_data=None,
-                          operations=None):
-    return read_HDF5_file(hdf5_path, incremental_data=incremental_data,
-                          volume_data=volume_data, phase_data=phase_data,
-                          field_data=field_data, grain_data=grain_data,
-                          operations=operations)
+                          operations=None, visualise=None):
+
+    out = read_HDF5_file(hdf5_path, incremental_data=incremental_data,
+                         volume_data=volume_data, phase_data=phase_data,
+                         field_data=field_data, grain_data=grain_data,
+                         operations=operations)
+
+    if visualise is not None:
+
+        if visualise is True:
+            visualise = {}
+
+        os.mkdir('viz')
+        with working_directory('viz'):
+
+            from damask import Result
+
+            result = Result(hdf5_path)
+
+            incs = visualise.pop('increments', None)
+            if incs:
+                if not isinstance(incs, list):
+                    incs = [incs]
+                incs_normed = []
+                for i in incs:
+                    if i >= 0:
+                        i_normed = i
+                    else:
+                        i_normed = len(result.increments) + i
+                    incs_normed.append(i_normed)
+                result.pick('increments', incs_normed)
+            result.to_vtk(**visualise)
+
+    return out
 
 
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
@@ -240,7 +272,6 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
     }
     return out
 
-
 @func_mapper(task='modify_volume_element', method='add_buffer_zones')
 def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
                                            phase_ids, phase_labels, homog_label, order):
@@ -251,6 +282,32 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
     }
     return out
 
+@func_mapper(task='modify_volume_element', method='new_orientations')
+def modify_volume_element_new_orientations(volume_element, volume_element_response):
+
+    n_grains = volume_element['orientations']['quaternions'].shape[0]
+    n_fragments = volume_element_response['incremental_data']['orientations']['data']['quaternions'].shape[1]
+
+    old_oris = volume_element_response['incremental_data']['orientations']['data']['quaternions'][-1]
+    random_index = np.random.randint(n_fragments, size=n_grains)
+    print("randomindex array size: ", random_index.shape)
+    volume_element['orientations']['quaternions'] = old_oris[random_index, :]
+
+    print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
+    
+    out = {'volume_element': volume_element}
+    return out
+
+@func_mapper(task='modify_volume_element', method='geometry')
+def modify_volume_element_geometry(volume_element, volume_element_response):
+
+    print("\nold_geomsize:", volume_element['size']) # DEBUG
+    volume_element['size'] = np.matmul(volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
+    print("\nnew_geomsize:", volume_element['size']) # DEBUG
+    
+    out = { 'volume_element': volume_element }
+    return out
+    
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
