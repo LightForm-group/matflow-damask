@@ -223,32 +223,51 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
 
     if visualise is not None:
 
+        from damask import Result
+        from damask_parse.utils import parse_inc_specs
+
         if visualise is True:
-            visualise = {}
+            visualise = [{}]
+        elif isinstance(visualise, dict):
+            visualise = [visualise]
 
         os.mkdir('viz')
         with working_directory('viz'):
 
-            from damask import Result
-
             result = Result(hdf5_path)
 
-            incs = visualise.pop('increments', None)
-            if incs:
-                if not isinstance(incs, list):
-                    incs = [incs]
-                incs_normed = []
-                for i in incs:
-                    if i >= 0:
-                        i_normed = i
-                    else:
-                        i_normed = len(result.increments) + i
-                    incs_normed.append(i_normed)
-                result.pick('increments', incs_normed)
-            result.to_vtk(**visualise)
+            for viz_dict_idx, viz_dict in enumerate(visualise, 1):
+
+                if len(visualise) > 1:
+                    viz_dir = str(viz_dict_idx)
+                    os.mkdir(viz_dir)
+                else:
+                    viz_dir = '.'
+                with working_directory(viz_dir):
+
+                    try:
+                        # all incs if not specified:
+                        incs_spec = viz_dict.get('increments', None)
+                        parsed_incs = parse_inc_specs(incs_spec, result)
+                        result = result.view('increments', parsed_incs)
+
+                        # all phases if not specified:
+                        phases = viz_dict.get('phases', True)
+                        result = result.view('phases', phases)
+
+                        # all homogs if not specified:
+                        homogs = viz_dict.get('homogenizations', True)
+                        result = result.view('homogenizations', homogs)
+
+                        # all outputs if not specified:
+                        outputs = viz_dict.get('fields', '*')
+                        result.save_VTK(output=outputs)
+
+                    except:
+                        print(f'Could not save VTK files for visualise item: {viz_dict}')
+                        continue
 
     return out
-
 
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
 def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
