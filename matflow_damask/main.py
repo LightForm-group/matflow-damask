@@ -263,8 +263,9 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                         outputs = viz_dict.get('fields', '*')
                         result.save_VTK(output=outputs)
 
-                    except:
-                        print(f'Could not save VTK files for visualise item: {viz_dict}')
+                    except Exception as err:
+                        print(f'Could not save VTK files for visualise item: {viz_dict}. '
+                              f'Exception was: {err}')
                         continue
 
     return out
