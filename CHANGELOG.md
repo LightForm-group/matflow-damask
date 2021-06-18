@@ -1,5 +1,17 @@
 # Change Log
 
+## [0.1.18] - 2021.xx.xx
+
+### Added
+
+- Add implementation of Taylor simulation task.
+- Add implementation of task `sample_texture` method `from_random`.
+
+### Changed
+
+- Use new output map options (`volume_data`, `phase_data`, `field_data` and `grain_data`) for reading results from a simulation.
+- Remove methods that made use of the DAMASK command line scripts.
+
 ## [0.1.17] - 2021.05.11
 
 ### Added
