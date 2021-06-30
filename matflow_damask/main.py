@@ -12,6 +12,7 @@ import pkg_resources
 from damask_parse import (
     read_geom,
     read_material,
+    read_load_case,
     read_HDF5_file,
     write_load_case,
     write_geom,
@@ -163,6 +164,12 @@ def generate_volume_element_from_damask_input_files(geom_path, material_path):
     out = {'volume_element': volume_element}
     return out
 
+@func_mapper(task='generate_load_case', method='from_damask_input_files')
+def generate_load_case_from_damask_input_files(load_path)
+
+    load_path, load_cases = read_load_case(load_path)
+    load_path = write_load_case(load_path, load_cases)
+    return load_path
 
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
 @output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
