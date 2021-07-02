@@ -10,6 +10,9 @@ import hickle
 import numpy as np
 import pkg_resources
 from damask_parse import (
+    read_geom,
+    read_material,
+    read_load_case,
     read_HDF5_file,
     write_load_case,
     write_geom,
@@ -78,10 +81,51 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
     return out
 
 
+
 @func_mapper(task='sample_texture', method='from_random')
 def orientations_from_random(num_orientations,
                              orientation_coordinate_system=None):
     from damask import Rotation
+
+@func_mapper(task='generate_volume_element', method='from_damask_input_files')
+def generate_volume_element_from_damask_input_files(geom_path, material_path):
+    
+    geom_dat = read_geom(geom_path)
+    material_data = read_material(material_path)
+    volume_element = {
+        'element_material_idx': geom_dat['element_material_idx'],
+        'grid_size': geom_dat['grid_size'],
+        'size': geom_dat['size'],
+        **material_data['volume_element'],    
+}
+    volume_element = validate_volume_element(volume_element)
+    out = {'volume_element': volume_element}
+    return out
+
+@func_mapper(task='generate_load_case', method='from_damask_input_files')
+def generate_load_case_from_damask_input_files(load_path):
+    load_path, load_cases = read_load_case(load_path)
+    load_path = write_load_case(load_path, load_cases)
+    return path, load_case
+
+@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_OLD')
+@output_mapper('volume_element', 'generate_volume_element', 'random_voronoi_from_orientations_OLD')
+def read_damask_geom(geom_path, ori_coord_system_path, phase_label_path, homog_label_path,
+                     model_coordinate_system, buffer_phase_label):
+
+    # TODO: coord systems:
+    # volume_element['model_coordinate_system'] = model_coordinate_system
+    # ori_coord_sys = read_orientation_coordinate_system(ori_coord_system_path)
+    # volume_element['orientation_coordinate_system'] = ori_coord_sys
+
+    with Path(phase_label_path).open('r') as handle:
+        phase_labels = [handle.read().strip()]
+
+    with Path(homog_label_path).open('r') as handle:
+        homog_label = handle.read().strip()
+
+    if buffer_phase_label:
+        phase_labels.append(buffer_phase_label)
 
     rotation = Rotation.from_random(shape=(num_orientations,))
 
