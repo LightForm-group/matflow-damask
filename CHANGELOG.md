@@ -6,6 +6,7 @@
 
 - Add implementation of Taylor simulation task.
 - Add implementation of task `sample_texture` method `from_random`.
+- Add implementation of task `generate_volume_element` method `from_damask_input_files`
 
 ### Changed
 

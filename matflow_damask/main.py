@@ -10,6 +10,8 @@ import hickle
 import numpy as np
 import pkg_resources
 from damask_parse import (
+    read_geom,
+    read_material,
     read_HDF5_file,
     write_load_case,
     write_geom,
@@ -422,6 +424,21 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
     }
     volume_element = validate_volume_element(volume_element)
     return {'volume_element': volume_element}
+
+
+@func_mapper(task='generate_volume_element', method='from_damask_input_files')
+def generate_volume_element_from_damask_input_files(geom_path, material_path):
+    geom_dat = read_geom(geom_path)
+    material_data = read_material(material_path)
+    volume_element = {
+        'element_material_idx': geom_dat['element_material_idx'],
+        'grid_size': geom_dat['grid_size'],
+        'size': geom_dat['size'],
+        **material_data['volume_element'],    
+    }
+    volume_element = validate_volume_element(volume_element)
+    out = {'volume_element': volume_element}
+    return out
 
 
 @software_versions()
