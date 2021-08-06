@@ -11,6 +11,7 @@
 
 - Use new output map options (`volume_data`, `phase_data`, `field_data` and `grain_data`) for reading results from a simulation.
 - Remove methods that made use of the DAMASK command line scripts.
+- Add `orientations_use_max_precision` parameter to task/methods: `generate_volume_element/random_voronoi`, `generate_volume_element/random_voronoi_from_orientations`, `sample_texture/from_random`, `generate_microstructure_seeds/random` and `simulate_volume_element_loading/CP_FFT`.
 
 ## [0.1.17] - 2021.05.11
 
