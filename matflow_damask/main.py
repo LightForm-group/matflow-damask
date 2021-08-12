@@ -49,7 +49,8 @@ def read_orientation_coordinate_system(path):
 
 @func_mapper(task='generate_microstructure_seeds', method='random')
 def seeds_from_random(size, num_grains, phase_label, grid_size=None,
-                      orientation_coordinate_system=None):
+                      orientation_coordinate_system=None,
+                      orientations_use_max_precision=False):
     from damask import seeds
     from damask import Rotation
 
@@ -59,19 +60,23 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
     position = seeds.from_random(size, num_grains, cells=grid_size)
     rotation = Rotation.from_random(shape=(num_grains,))
 
+    oris = {
+        'type': 'quat',
+        'quaternions': rotation.quaternion,
+        'orientation_coordinate_system': orientation_coordinate_system,
+        'unit_cell_alignment': {
+            'x': 'a',
+            'z': 'c',
+        },
+        'P': -1,
+        'use_max_precision': orientations_use_max_precision,
+    }
+    oris = validate_orientations(oris)
+
     out = {
         'microstructure_seeds': {
             'position': position,
-            'orientations': {
-                'type': 'quat',
-                'quaternions': rotation.quaternion,
-                'orientation_coordinate_system': orientation_coordinate_system,
-                'unit_cell_alignment': {
-                    'x': 'a',
-                    'z': 'c',
-                },
-                'P': -1,
-            },
+            'orientations': oris,
             'size': size,
             'random_seed': None,
             'phase_label': phase_label,
@@ -82,23 +87,24 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None,
 
 @func_mapper(task='sample_texture', method='from_random')
 def orientations_from_random(num_orientations,
-                             orientation_coordinate_system=None):
+                             orientation_coordinate_system=None,
+                             orientations_use_max_precision=False):
     from damask import Rotation
 
     rotation = Rotation.from_random(shape=(num_orientations,))
 
-    out = {
-        'orientations': {
-            'type': 'quat',
-            'quaternions': rotation.quaternion,
-            'orientation_coordinate_system': orientation_coordinate_system,
-            'unit_cell_alignment': {
-                'x': 'a',
-                'z': 'c',
-            },
-            'P': -1,
+    oris = {
+        'type': 'quat',
+        'quaternions': rotation.quaternion,
+        'orientation_coordinate_system': orientation_coordinate_system,
+        'unit_cell_alignment': {
+            'x': 'a',
+            'z': 'c',
         },
-    }
+        'P': -1,
+        'use_max_precision': orientations_use_max_precision,
+    }    
+    out = {'orientations': validate_orientations(oris)}
     return out
 
 
@@ -119,7 +125,8 @@ def write_damask_geom(path, volume_element):
 def write_damask_material(path, homogenization_schemes, volume_element,
                           single_crystal_parameters,
                           single_crystal_parameter_perturbation, phases,
-                          texture_alignment_method):
+                          texture_alignment_method,
+                          orientations_use_max_precision):
 
     # TODO: sort out texture alignment
 
@@ -151,6 +158,10 @@ def write_damask_material(path, homogenization_schemes, volume_element,
             phases[phase_label]['mechanical']['plastic'].update(**SC_params)
 
     path = Path(path)
+    if orientations_use_max_precision is not None:
+        volume_element['orientations'].update({
+            'use_max_precision': orientations_use_max_precision
+        })
     write_material(
         homog_schemes=homogenization_schemes,
         phases=phases,
@@ -340,7 +351,8 @@ def visualise_volume_element(volume_element):
 @func_mapper(task='generate_volume_element', method='random_voronoi')
 def generate_volume_element_random_voronoi_2(microstructure_seeds, grid_size, homog_label,
                                              scale_morphology, scale_update_size,
-                                             buffer_phase_size, buffer_phase_label):
+                                             buffer_phase_size, buffer_phase_label,
+                                             orientations_use_max_precision):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         grid_size,
@@ -349,6 +361,7 @@ def generate_volume_element_random_voronoi_2(microstructure_seeds, grid_size, ho
         scale_update_size,
         buffer_phase_size,
         buffer_phase_label,
+        orientations_use_max_precision,
         orientations=None,
     )
     return out
@@ -360,7 +373,8 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
                                                           scale_update_size,
                                                           buffer_phase_size,
                                                           buffer_phase_label,
-                                                          orientations):
+                                                          orientations,
+                                                          orientations_use_max_precision):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         grid_size,
@@ -369,6 +383,7 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
         scale_update_size,
         buffer_phase_size,
         buffer_phase_label,
+        orientations_use_max_precision,
         orientations=orientations,
     )
     return out
@@ -377,6 +392,7 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
 def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homog_label,
                                            scale_morphology, scale_update_size,
                                            buffer_phase_size, buffer_phase_label,
+                                           orientations_use_max_precision,
                                            orientations=None):
     from damask import Grid
 
@@ -414,8 +430,10 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
         grid_obj = grid_canvased
         phase_labels.append(buffer_phase_label)
 
+    oris = orientations or microstructure_seeds['orientations']
+    oris.update({'use_max_precision': orientations_use_max_precision})
     volume_element = {
-        'orientations': orientations or microstructure_seeds['orientations'],
+        'orientations': oris,
         'element_material_idx': grid_obj.material,
         'grid_size': grid_obj.cells.tolist(),
         'size': grid_obj.size.astype(float).tolist(),
