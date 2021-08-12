@@ -458,6 +458,65 @@ def generate_volume_element_from_damask_input_files(geom_path, material_path):
     out = {'volume_element': volume_element}
     return out
 
+@func_mapper(task='generate_volume_element', method='dual_phase_ti_alpha_colony')
+def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio,
+                                            alpha_particle_centres, alpha_orientation,
+                                            beta_orientation):
+    
+    from damask import seeds, Grid
+
+    my_seeds = seeds.from_random([1, 1, 1], 1)
+    my_grid = Grid.from_Voronoi_tessellation(
+        np.array(grid_size),
+        [1, 1, 1],
+        my_seeds,
+        periodic=True
+    )
+
+    # Ellipsoid axes ratio: (2 : 1 : 0.4)
+    plate_dims = np.array([0.35] * 3)
+
+    plate_dims_norm_factor = 2 / np.max(alpha_particle_axes_ratio)
+    plate_dims[0] *= alpha_particle_axes_ratio[0] * plate_dims_norm_factor
+    plate_dims[1] *= alpha_particle_axes_ratio[1] * plate_dims_norm_factor
+    plate_dims[2] *= alpha_particle_axes_ratio[2] * plate_dims_norm_factor
+
+    # Fixed for now until/if we investigate effect of proximity of the alpha laths:
+    centres = np.array([
+        [0.3, 0.10, 0.3],
+        [0.45, 0.65, 0.6],
+        [0.85, 0.30, 0.9],
+    ])
+
+    for centre in centres:
+        my_grid = my_grid.add_primitive(
+            dimension=plate_dims,
+            center=centre,
+            exponent=1,
+        )
+
+    oris = {
+        'type': 'quat',
+        'quaternions': np.array([        
+            beta_orientation,
+            alpha_orientation,
+        ]),
+        'unit_cell_alignment': {'x': 'a'},
+        'P': 1,
+    }
+
+    volume_element = {    
+        'constituent_material_idx': np.arange(1 + len(centres)),
+        'constituent_phase_label': ['Ti-beta', 'Ti-alpha', 'Ti-alpha', 'Ti-alpha'],
+        'constituent_orientation_idx': [0] + [1] * len(centres),
+        'material_homog': ['SX'] * (1 + len(centres)),
+        'element_material_idx': my_grid.material,
+        'grid_size': my_grid.cells,
+        'orientations': oris,
+    }
+    volume_element = validate_volume_element(volume_element)
+    
+    return {'volume_element': volume_element}    
 
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
