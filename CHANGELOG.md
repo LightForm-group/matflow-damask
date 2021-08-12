@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.20] - 2021.xx.xx
+
+### Changed
+
+- Add parameter `RNG_seed` to task `generate_microstructure_seeds/random`.
+
 ## [0.1.19] - 2021.08.12
 
 ### Added
