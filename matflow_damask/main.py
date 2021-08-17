@@ -63,6 +63,7 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
     oris = {
         'type': 'quat',
         'quaternions': rotation.quaternion,
+        'quat_component_ordering': 'scalar-vector',
         'orientation_coordinate_system': orientation_coordinate_system,
         'unit_cell_alignment': {
             'x': 'a',
@@ -96,6 +97,7 @@ def orientations_from_random(num_orientations,
     oris = {
         'type': 'quat',
         'quaternions': rotation.quaternion,
+        'quat_component_ordering': 'scalar-vector',
         'orientation_coordinate_system': orientation_coordinate_system,
         'unit_cell_alignment': {
             'x': 'a',
@@ -501,6 +503,7 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
             beta_orientation,
             alpha_orientation,
         ]),
+        'quat_component_ordering': 'scalar-vector',
         'unit_cell_alignment': {'x': 'a'},
         'P': 1,
     }
