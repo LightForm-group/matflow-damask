@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.21] - 2021.xx.xx
+
+### Changed
+
+- Use `quat_component_ordering` key in orientations dict.
+
 ## [0.1.20] - 2021.08.14
 
 ### Changed
