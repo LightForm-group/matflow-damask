@@ -276,6 +276,15 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
 
                         # all outputs if not specified:
                         outputs = viz_dict.get('fields', '*')
+
+                        if isinstance(outputs, list) and 'phase' in outputs:
+                            outputs.remove('phase')
+                            phase_array = out['field_data']['phase']['data']
+
+                            v = result.geometry0
+                            v.add(phase_array.flatten(order='F'), label='phase')
+                            v.save('phase')
+
                         result.save_VTK(output=outputs)
 
                     except Exception as err:
@@ -329,7 +338,7 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     volume_element['orientations']['quaternions'] = old_oris[random_index, :]
 
     print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
-    
+
     out = {'volume_element': volume_element}
     return out
 
@@ -339,10 +348,10 @@ def modify_volume_element_geometry(volume_element, volume_element_response):
     print("\nold_geomsize:", volume_element['size']) # DEBUG
     volume_element['size'] = np.matmul(volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
     print("\nnew_geomsize:", volume_element['size']) # DEBUG
-    
+
     out = { 'volume_element': volume_element }
     return out
-    
+
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
