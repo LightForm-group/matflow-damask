@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.22] - 2021.11.09
+
+### Added
+
+- Add saving of VE phases to a VTK file.
+
 ## [0.1.21] - 2021.09.24
 
 ### Changed
