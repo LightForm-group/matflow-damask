@@ -105,7 +105,7 @@ def orientations_from_random(num_orientations,
         },
         'P': -1,
         'use_max_precision': orientations_use_max_precision,
-    }    
+    }
     out = {'orientations': validate_orientations(oris)}
     return out
 
@@ -294,6 +294,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
 
     return out
 
+
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
 def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
                             phase_data=None, operations=None):
@@ -316,6 +317,7 @@ def volume_element_from_microstructure_image(microstructure_image, depth, image_
     }
     return out
 
+
 @func_mapper(task='modify_volume_element', method='add_buffer_zones')
 def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
                                            phase_ids, phase_labels, homog_label, order):
@@ -325,6 +327,7 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
         )
     }
     return out
+
 
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
@@ -337,7 +340,8 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     print("randomindex array size: ", random_index.shape)
     volume_element['orientations']['quaternions'] = old_oris[random_index, :]
 
-    print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
+    print("old orientations array shape: ", old_oris.shape,
+          "\nnew orientations array shape: ", old_oris[random_index, :].shape)  # DEBUG
 
     out = {'volume_element': volume_element}
     return out
@@ -345,11 +349,12 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
 @func_mapper(task='modify_volume_element', method='geometry')
 def modify_volume_element_geometry(volume_element, volume_element_response):
 
-    print("\nold_geomsize:", volume_element['size']) # DEBUG
-    volume_element['size'] = np.matmul(volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
-    print("\nnew_geomsize:", volume_element['size']) # DEBUG
+    print("\nold_geomsize:", volume_element['size'])  # DEBUG
+    volume_element['size'] = np.matmul(
+        volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
+    print("\nnew_geomsize:", volume_element['size'])  # DEBUG
 
-    out = { 'volume_element': volume_element }
+    out = {'volume_element': volume_element}
     return out
 
 
@@ -469,11 +474,12 @@ def generate_volume_element_from_damask_input_files(geom_path, material_path):
     out = {'volume_element': volume_element}
     return out
 
+
 @func_mapper(task='generate_volume_element', method='dual_phase_ti_alpha_colony')
 def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio,
                                             alpha_particle_centres, alpha_orientation,
                                             beta_orientation):
-    
+
     from damask import seeds, Grid
 
     my_seeds = seeds.from_random([1, 1, 1], 1)
@@ -508,7 +514,7 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
 
     oris = {
         'type': 'quat',
-        'quaternions': np.array([        
+        'quaternions': np.array([
             beta_orientation,
             alpha_orientation,
         ]),
@@ -517,7 +523,7 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
         'P': 1,
     }
 
-    volume_element = {    
+    volume_element = {
         'constituent_material_idx': np.arange(1 + len(centres)),
         'constituent_phase_label': ['Ti-beta', 'Ti-alpha', 'Ti-alpha', 'Ti-alpha'],
         'constituent_orientation_idx': [0] + [1] * len(centres),
@@ -527,8 +533,9 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
         'orientations': oris,
     }
     volume_element = validate_volume_element(volume_element)
-    
-    return {'volume_element': volume_element}    
+
+    return {'volume_element': volume_element}
+
 
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
