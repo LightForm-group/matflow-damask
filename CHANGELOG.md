@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.23] - 2021.xx.xx
+
+### Added
+
+- Support passing `orientations` to task `generate_volume_element/from_damask_input_files`. Orientation in the passed `material.yml` file will be overwritten by those passed directly in `orientations`.
+
 ## [0.1.22] - 2021.11.09
 
 ### Added
