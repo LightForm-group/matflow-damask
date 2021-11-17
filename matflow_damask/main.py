@@ -346,6 +346,7 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     out = {'volume_element': volume_element}
     return out
 
+
 @func_mapper(task='modify_volume_element', method='geometry')
 def modify_volume_element_geometry(volume_element, volume_element_response):
 
