@@ -239,7 +239,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
     if visualise is not None:
 
         from damask import Result
-        from damask_parse.utils import parse_inc_specs
+        from damask_parse.utils import parse_inc_specs_using_result_obj
 
         if visualise is True:
             visualise = [{}]
@@ -263,7 +263,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                     try:
                         # all incs if not specified:
                         incs_spec = viz_dict.get('increments', None)
-                        parsed_incs = parse_inc_specs(incs_spec, result)
+                        parsed_incs = parse_inc_specs_using_result_obj(incs_spec, result)
                         result = result.view('increments', parsed_incs)
 
                         # all phases if not specified:
