@@ -551,6 +551,63 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
     return {'volume_element': volume_element}
 
 
+@func_mapper(task='generate_volume_element', method='single_voxel_grains')
+def generate_volume_element_single_voxel_grains(grid_size, size, homog_label,
+                                                scale_morphology, scale_update_size,
+                                                phase_label, buffer_phase_size,
+                                                buffer_phase_label, orientations,
+                                                orientations_use_max_precision):
+
+    from damask import Grid
+
+    grid_size = np.array(grid_size)
+    size = np.array(size)
+
+    grid_obj = Grid(
+        material=np.arange(np.product(grid_size)).reshape(grid_size, order='F'),
+        size=size,
+        )
+
+    if scale_morphology is not None:
+        scale_morphology = np.array(scale_morphology)
+
+        original_cells = grid_obj.cells
+        new_cells = original_cells * scale_morphology
+        grid_scaled = grid_obj.scale(new_cells)
+
+        if scale_update_size:
+            original_size = grid_obj.size
+            new_size = original_size * scale_morphology
+            grid_scaled.size = new_size
+
+        grid_obj = grid_scaled
+
+    phase_labels = [phase_label]
+    if buffer_phase_size is not None:
+        original_cells = grid_obj.cells
+        original_size = grid_obj.size
+
+        new_cells = original_cells + np.array(buffer_phase_size)
+        new_size = original_size * (new_cells / original_cells)
+
+        grid_canvased = grid_obj.canvas(cells=new_cells)
+        grid_canvased.size = new_size
+
+        grid_obj = grid_canvased
+        phase_labels.append(buffer_phase_label)
+    
+    orientations.update({'use_max_precision': orientations_use_max_precision})
+    volume_element = {
+        'orientations': orientations,
+        'element_material_idx': grid_obj.material,
+        'grid_size': grid_obj.cells.tolist(),
+        'size': grid_obj.size.astype(float).tolist(),
+        'phase_labels': phase_labels,
+        'homog_label': homog_label,
+    }
+    volume_element = validate_volume_element(volume_element)
+    return {'volume_element': volume_element}
+
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
     'Get versions of pertinent software associated with this extension.'

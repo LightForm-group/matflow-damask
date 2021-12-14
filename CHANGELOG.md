@@ -5,6 +5,7 @@
 ### Added
 
 - Support passing `orientations` to task `generate_volume_element/from_damask_input_files`. Orientation in the passed `material.yml` file will be overwritten by those passed directly in `orientations`.
+- Add task method: `generate_volume_element/single_voxel_grains` for generating an RVE that associated one voxel with each grain.
 
 ## [0.1.22] - 2021.11.09
 
