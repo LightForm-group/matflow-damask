@@ -112,9 +112,9 @@ def orientations_from_random(num_orientations,
 
 @input_mapper('load.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 @input_mapper('load.yaml', 'simulate_orientations_loading', 'Taylor')
-def write_damask_load_case(path, load_case):
+def write_damask_load_case(path, load_case, solver, initial_conditions):
     path = Path(path)
-    write_load_case(path.parent, load_case, name=path.name)
+    write_load_case(path.parent, load_case, solver, initial_conditions, name=path.name)
 
 
 @input_mapper('geom.vtr', 'simulate_volume_element_loading', 'CP_FFT')

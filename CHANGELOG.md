@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.24] - 2022.15.02
+
+### Changed
+
+- Support `solver` and `initial_conditions` keys in the load YAML file.
+
 ## [0.1.23] - 2021.12.20
 
 ### Added
