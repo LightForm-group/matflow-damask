@@ -187,7 +187,7 @@ def write_damask_taylor_material(path, orientations, phases):
     if len(phases) != 1:
         msg = ('Only one phase should be specified.')
         raise ValueError(msg)
-    pahse_name = list(phases.keys())[0]
+    phase_name = list(phases.keys())[0]
 
     volume_element = {
         'element_material_idx': np.arange(8).reshape([2, 2, 2]),
@@ -196,7 +196,7 @@ def write_damask_taylor_material(path, orientations, phases):
 
         'constituent_material_idx': np.arange(8).repeat(num_oris_per_mat),
         'constituent_material_fraction': np.full(num_oris, 1. / num_oris_per_mat),
-        'constituent_phase_label': np.full(num_oris, pahse_name),
+        'constituent_phase_label': np.full(num_oris, phase_name),
         'constituent_orientation_idx': np.arange(num_oris),
         'material_homog': np.full(8, 'Taylor'),
         'orientations': orientations,
@@ -277,13 +277,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                         # all outputs if not specified:
                         outputs = viz_dict.get('fields', '*')
 
-                        if isinstance(outputs, list) and 'phase' in outputs:
-                            outputs.remove('phase')
-                            phase_array = out['field_data']['phase']['data']
-
-                            v = result.geometry0
-                            v.add(phase_array.flatten(order='F'), label='phase')
-                            v.save('phase')
+                        outputs = visualise_static_outpurts(outputs, result, out)
 
                         result.save_VTK(output=outputs)
 
@@ -293,6 +287,26 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                         continue
 
     return out
+
+
+def visualise_static_outpurts(outputs, result, out):
+    """Create separate VTK file for grain and phase maps."""
+
+    static_outputs = ['grain', 'phase']
+
+    if isinstance(outputs, list):
+        static_outputs = list(set(outputs).intersection(static_outputs))
+        if len(static_outputs) > 0:
+            v = result.geometry0
+
+            for static_output in static_outputs:
+                outputs.remove(static_output)
+                dat_array = out['field_data'][static_output]['data']
+                v.add(dat_array.flatten(order='F'), label=static_output)
+
+            v.save('static_outputs')
+
+    return outputs
 
 
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
