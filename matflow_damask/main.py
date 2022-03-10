@@ -304,15 +304,13 @@ def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
 
 
 @func_mapper(task='generate_volume_element', method='extrusion')
-def volume_element_from_microstructure_image(microstructure_image, depth, image_axes,
-                                             phase_label, homog_label):
+def volume_element_from_microstructure_image(microstructure_image, depth,
+                                             image_axes, phase_label,
+                                             phase_label_mapping, homog_label):
     out = {
         'volume_element': volume_element_from_2D_microstructure(
-            microstructure_image,
-            phase_label,
-            homog_label,
-            depth,
-            image_axes,
+            microstructure_image, homog_label, phase_label,
+            phase_label_mapping, depth, image_axes,
         )
     }
     return out
@@ -595,7 +593,7 @@ def generate_volume_element_single_voxel_grains(grid_size, size, homog_label,
 
         grid_obj = grid_canvased
         phase_labels.append(buffer_phase_label)
-    
+
     orientations.update({'use_max_precision': orientations_use_max_precision})
     volume_element = {
         'orientations': orientations,
