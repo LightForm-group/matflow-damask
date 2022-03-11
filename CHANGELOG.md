@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.1.25] - 2022.03.11
+
+### Added
+
+- Add support creating a VE with a multple phases from a `microstructure_image`.
+- Add option to save a grain map when processing simulation results.
+
 ## [0.1.24] - 2022.02.15
 
 ### Changed
