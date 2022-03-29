@@ -78,8 +78,69 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
             'position': position,
             'orientations': oris,
             'size': size,
+            'grid_size': grid_size,
             'random_seed': None,
             'phase_label': phase_label,
+        }
+    }
+    return out
+
+
+@func_mapper(task='sample_texture', method='from_random')
+@func_mapper(task='modify_microstructure_seeds', method='scale')
+def modify_microstructure_seeds_scale(microstructure_seeds, factor):
+    if factor is None:
+        return {'microstructure_seeds': copy.deepcopy(microstructure_seeds)}
+
+    from damask import seeds
+    from damask import Rotation
+
+    size = microstructure_seeds['size']
+    grid_size = microstructure_seeds['grid_size']
+    position = microstructure_seeds['position']
+    num_grains = position.shape[0]
+
+    # Enlarge and fill up new space with seeds
+    size_new = size * factor
+    grid_size_new = (None if grid_size is None
+                     else np.rint(grid_size * factor).astype(int))
+    num_grains_new = round(num_grains * factor**3)
+
+    # over sample to ensure enough left after cutting out the smaller region
+    position_new = seeds.from_random(size_new, int(num_grains_new * 1.5),
+                                     cells=grid_size_new)
+
+    condition = ((position_new[:, 0] > size[0]) |
+                 (position_new[:, 1] > size[1]) |
+                 (position_new[:, 2] > size[2]))
+    position_new = position_new[condition][:num_grains_new - num_grains]
+
+    if position_new.shape[0] != num_grains_new - num_grains:
+        msg = ('Not enough seeds generated.')
+        raise ValueError(msg)
+
+    position_new = np.vstack((copy.deepcopy(position), position_new))
+
+    # Shift initial seeds to the centre
+    position_new += (size_new - size) / 2
+    for i in range(3):
+        position_new[position_new[:, i] > size_new[i], i] -= size_new[i]
+
+    # Create some extra orientations
+    rotation = Rotation.from_random(shape=(num_grains_new - num_grains,))
+
+    oris = copy.deepcopy(microstructure_seeds['orientations'])
+    oris['quaternions'] = np.vstack((oris['quaternions'], rotation.quaternion))
+    oris = validate_orientations(oris)
+
+    out = {
+        'microstructure_seeds': {
+            'position': position_new,
+            'orientations': oris,
+            'size': size_new,
+            'grid_size': grid_size_new,
+            'random_seed': None,
+            'phase_label': microstructure_seeds['phase_label'],
         }
     }
     return out
@@ -103,7 +164,7 @@ def orientations_from_random(num_orientations,
         },
         'P': -1,
         'use_max_precision': orientations_use_max_precision,
-    }    
+    }
     out = {'orientations': validate_orientations(oris)}
     return out
 
@@ -395,6 +456,9 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
                                            orientations_use_max_precision,
                                            orientations=None):
     from damask import Grid
+
+    if grid_size is None:
+        grid_size = microstructure_seeds['grid_size']
 
     grid_obj = Grid.from_Voronoi_tessellation(
         cells=np.array(grid_size),
