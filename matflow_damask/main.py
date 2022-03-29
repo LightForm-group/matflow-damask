@@ -24,7 +24,6 @@ from damask_parse.utils import (
     validate_orientations,
     volume_element_from_2D_microstructure,
     add_volume_element_buffer_zones,
-    validate_orientations,
     validate_volume_element,
 )
 from damask_parse import __version__ as damask_parse_version
@@ -236,7 +235,6 @@ def write_damask_material(path, homogenization_schemes, volume_element,
 def write_damask_taylor_material(path, orientations, phases,
                                  orientations_use_max_precision):
     # Convert orientations to quats and check size
-    orientations = validate_orientations(orientations)
     if orientations_use_max_precision is not None:
         orientations.update({
             'use_max_precision': orientations_use_max_precision
