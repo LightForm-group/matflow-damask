@@ -1,5 +1,37 @@
 # Change Log
 
+## [0.1.25] - 2022.03.11
+
+### Added
+
+- Add support creating a VE with a multple phases from a `microstructure_image`.
+- Add option to save a grain map when processing simulation results.
+
+## [0.1.24] - 2022.02.15
+
+### Changed
+
+- Support `solver` and `initial_conditions` keys in the load YAML file.
+
+## [0.1.23] - 2021.12.20
+
+### Added
+
+- Support passing `orientations` to task `generate_volume_element/from_damask_input_files`. Orientation in the passed `material.yml` file will be overwritten by those passed directly in `orientations`.
+- Add task method: `generate_volume_element/single_voxel_grains` for generating an RVE that associates each grain with exactly one voxel.
+
+## [0.1.22] - 2021.11.09
+
+### Added
+
+- Add saving of VE phases to a VTK file.
+
+## [0.1.21] - 2021.09.24
+
+### Changed
+
+- Use `quat_component_ordering` key in orientations dict.
+
 ## [0.1.20] - 2021.08.14
 
 ### Changed

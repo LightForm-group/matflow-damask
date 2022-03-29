@@ -62,6 +62,7 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
     oris = {
         'type': 'quat',
         'quaternions': rotation.quaternion,
+        'quat_component_ordering': 'scalar-vector',
         'orientation_coordinate_system': orientation_coordinate_system,
         'unit_cell_alignment': {
             'x': 'a',
@@ -156,6 +157,7 @@ def orientations_from_random(num_orientations,
     oris = {
         'type': 'quat',
         'quaternions': rotation.quaternion,
+        'quat_component_ordering': 'scalar-vector',
         'orientation_coordinate_system': orientation_coordinate_system,
         'unit_cell_alignment': {
             'x': 'a',
@@ -170,9 +172,9 @@ def orientations_from_random(num_orientations,
 
 @input_mapper('load.yaml', 'simulate_volume_element_loading', 'CP_FFT')
 @input_mapper('load.yaml', 'simulate_orientations_loading', 'Taylor')
-def write_damask_load_case(path, load_case):
+def write_damask_load_case(path, load_case, solver, initial_conditions):
     path = Path(path)
-    write_load_case(path.parent, load_case, name=path.name)
+    write_load_case(path.parent, load_case, solver, initial_conditions, name=path.name)
 
 
 @input_mapper('geom.vtr', 'simulate_volume_element_loading', 'CP_FFT')
@@ -250,7 +252,7 @@ def write_damask_taylor_material(path, orientations, phases,
     if len(phases) != 1:
         msg = ('Only one phase should be specified.')
         raise ValueError(msg)
-    pahse_name = list(phases.keys())[0]
+    phase_name = list(phases.keys())[0]
 
     volume_element = {
         'element_material_idx': np.arange(8).reshape([2, 2, 2]),
@@ -259,7 +261,7 @@ def write_damask_taylor_material(path, orientations, phases,
 
         'constituent_material_idx': np.arange(8).repeat(num_oris_per_mat),
         'constituent_material_fraction': np.full(num_oris, 1. / num_oris_per_mat),
-        'constituent_phase_label': np.full(num_oris, pahse_name),
+        'constituent_phase_label': np.full(num_oris, phase_name),
         'constituent_orientation_idx': np.arange(num_oris),
         'material_homog': np.full(8, 'Taylor'),
         'orientations': orientations,
@@ -302,7 +304,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
     if visualise is not None:
 
         from damask import Result
-        from damask_parse.utils import parse_inc_specs
+        from damask_parse.utils import parse_inc_specs_using_result_obj
 
         if visualise is True:
             visualise = [{}]
@@ -326,7 +328,7 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                     try:
                         # all incs if not specified:
                         incs_spec = viz_dict.get('increments', None)
-                        parsed_incs = parse_inc_specs(incs_spec, result)
+                        parsed_incs = parse_inc_specs_using_result_obj(incs_spec, result)
                         result = result.view('increments', parsed_incs)
 
                         # all phases if not specified:
@@ -339,6 +341,9 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
 
                         # all outputs if not specified:
                         outputs = viz_dict.get('fields', '*')
+
+                        outputs = visualise_static_outpurts(outputs, result, out)
+
                         result.save_VTK(output=outputs)
 
                     except Exception as err:
@@ -347,6 +352,27 @@ def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
                         continue
 
     return out
+
+
+def visualise_static_outpurts(outputs, result, out):
+    """Create separate VTK file for grain and phase maps."""
+
+    static_outputs = ['grain', 'phase']
+
+    if isinstance(outputs, list):
+        static_outputs = list(set(outputs).intersection(static_outputs))
+        if len(static_outputs) > 0:
+            v = result.geometry0
+
+            for static_output in static_outputs:
+                outputs.remove(static_output)
+                dat_array = out['field_data'][static_output]['data']
+                v.add(dat_array.flatten(order='F'), label=static_output)
+
+            v.save('static_outputs')
+
+    return outputs
+
 
 @output_mapper('orientations_response', 'simulate_orientations_loading', 'Taylor')
 def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
@@ -357,18 +383,17 @@ def read_damask_hdf5_file_2(hdf5_path, incremental_data=None, volume_data=None,
 
 
 @func_mapper(task='generate_volume_element', method='extrusion')
-def volume_element_from_microstructure_image(microstructure_image, depth, image_axes,
-                                             phase_label, homog_label):
+def volume_element_from_microstructure_image(microstructure_image, depth,
+                                             image_axes, phase_label,
+                                             phase_label_mapping, homog_label):
     out = {
         'volume_element': volume_element_from_2D_microstructure(
-            microstructure_image,
-            phase_label,
-            homog_label,
-            depth,
-            image_axes,
+            microstructure_image, homog_label, phase_label,
+            phase_label_mapping, depth, image_axes,
         )
     }
     return out
+
 
 @func_mapper(task='modify_volume_element', method='add_buffer_zones')
 def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
@@ -379,6 +404,7 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
         )
     }
     return out
+
 
 @func_mapper(task='modify_volume_element', method='new_orientations')
 def modify_volume_element_new_orientations(volume_element, volume_element_response):
@@ -391,21 +417,24 @@ def modify_volume_element_new_orientations(volume_element, volume_element_respon
     print("randomindex array size: ", random_index.shape)
     volume_element['orientations']['quaternions'] = old_oris[random_index, :]
 
-    print("old orientations array shape: ", old_oris.shape, "\nnew orientations array shape: ", old_oris[random_index, :].shape) # DEBUG
-    
+    print("old orientations array shape: ", old_oris.shape,
+          "\nnew orientations array shape: ", old_oris[random_index, :].shape)  # DEBUG
+
     out = {'volume_element': volume_element}
     return out
+
 
 @func_mapper(task='modify_volume_element', method='geometry')
 def modify_volume_element_geometry(volume_element, volume_element_response):
 
-    print("\nold_geomsize:", volume_element['size']) # DEBUG
-    volume_element['size'] = np.matmul(volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
-    print("\nnew_geomsize:", volume_element['size']) # DEBUG
-    
-    out = { 'volume_element': volume_element }
+    print("\nold_geomsize:", volume_element['size'])  # DEBUG
+    volume_element['size'] = np.matmul(
+        volume_element_response['incremental_data']['def_grad']['data'][-1], volume_element['size'])
+    print("\nnew_geomsize:", volume_element['size'])  # DEBUG
+
+    out = {'volume_element': volume_element}
     return out
-    
+
 
 @func_mapper(task='visualise_volume_element', method='VTK')
 def visualise_volume_element(volume_element):
@@ -513,24 +542,38 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
 
 
 @func_mapper(task='generate_volume_element', method='from_damask_input_files')
-def generate_volume_element_from_damask_input_files(geom_path, material_path):
+def generate_volume_element_from_damask_input_files(geom_path, material_path, orientations):
     geom_dat = read_geom(geom_path)
     material_data = read_material(material_path)
     volume_element = {
         'element_material_idx': geom_dat['element_material_idx'],
         'grid_size': geom_dat['grid_size'],
         'size': geom_dat['size'],
-        **material_data['volume_element'],    
+        **material_data['volume_element'],
     }
+
+    if orientations is not None:
+        orientations = validate_orientations(orientations)
+        num_supplied_ori = orientations['quaternions'].shape[0]
+        num_material_ori = volume_element['orientations']['quaternions'].shape[0]
+        if num_supplied_ori != num_material_ori:
+            raise ValueError(
+                f'Number of orientations supplied {num_supplied_ori} is different to '
+                f'number in the material file {num_material_ori}.'
+            )
+
+        volume_element['orientations'] = orientations
+
     volume_element = validate_volume_element(volume_element)
     out = {'volume_element': volume_element}
     return out
+
 
 @func_mapper(task='generate_volume_element', method='dual_phase_ti_alpha_colony')
 def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio,
                                             alpha_particle_centres, alpha_orientation,
                                             beta_orientation):
-    
+
     from damask import seeds, Grid
 
     my_seeds = seeds.from_random([1, 1, 1], 1)
@@ -565,15 +608,16 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
 
     oris = {
         'type': 'quat',
-        'quaternions': np.array([        
+        'quaternions': np.array([
             beta_orientation,
             alpha_orientation,
         ]),
+        'quat_component_ordering': 'scalar-vector',
         'unit_cell_alignment': {'x': 'a'},
         'P': 1,
     }
 
-    volume_element = {    
+    volume_element = {
         'constituent_material_idx': np.arange(1 + len(centres)),
         'constituent_phase_label': ['Ti-beta', 'Ti-alpha', 'Ti-alpha', 'Ti-alpha'],
         'constituent_orientation_idx': [0] + [1] * len(centres),
@@ -583,8 +627,66 @@ def generate_RVE_dual_phase_ti_alpha_colony(grid_size, alpha_particle_axes_ratio
         'orientations': oris,
     }
     volume_element = validate_volume_element(volume_element)
-    
-    return {'volume_element': volume_element}    
+
+    return {'volume_element': volume_element}
+
+
+@func_mapper(task='generate_volume_element', method='single_voxel_grains')
+def generate_volume_element_single_voxel_grains(grid_size, size, homog_label,
+                                                scale_morphology, scale_update_size,
+                                                phase_label, buffer_phase_size,
+                                                buffer_phase_label, orientations,
+                                                orientations_use_max_precision):
+
+    from damask import Grid
+
+    grid_size = np.array(grid_size)
+    size = np.array(size)
+
+    grid_obj = Grid(
+        material=np.arange(np.product(grid_size)).reshape(grid_size, order='F'),
+        size=size,
+        )
+
+    if scale_morphology is not None:
+        scale_morphology = np.array(scale_morphology)
+
+        original_cells = grid_obj.cells
+        new_cells = original_cells * scale_morphology
+        grid_scaled = grid_obj.scale(new_cells)
+
+        if scale_update_size:
+            original_size = grid_obj.size
+            new_size = original_size * scale_morphology
+            grid_scaled.size = new_size
+
+        grid_obj = grid_scaled
+
+    phase_labels = [phase_label]
+    if buffer_phase_size is not None:
+        original_cells = grid_obj.cells
+        original_size = grid_obj.size
+
+        new_cells = original_cells + np.array(buffer_phase_size)
+        new_size = original_size * (new_cells / original_cells)
+
+        grid_canvased = grid_obj.canvas(cells=new_cells)
+        grid_canvased.size = new_size
+
+        grid_obj = grid_canvased
+        phase_labels.append(buffer_phase_label)
+
+    orientations.update({'use_max_precision': orientations_use_max_precision})
+    volume_element = {
+        'orientations': orientations,
+        'element_material_idx': grid_obj.material,
+        'grid_size': grid_obj.cells.tolist(),
+        'size': grid_obj.size.astype(float).tolist(),
+        'phase_labels': phase_labels,
+        'homog_label': homog_label,
+    }
+    volume_element = validate_volume_element(volume_element)
+    return {'volume_element': volume_element}
 
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
