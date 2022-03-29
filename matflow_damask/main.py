@@ -233,8 +233,14 @@ def write_damask_material(path, homogenization_schemes, volume_element,
 
 
 @input_mapper('material.yaml', 'simulate_orientations_loading', 'Taylor')
-def write_damask_taylor_material(path, orientations, phases):
+def write_damask_taylor_material(path, orientations, phases,
+                                 orientations_use_max_precision):
     # Convert orientations to quats and check size
+    orientations = validate_orientations(orientations)
+    if orientations_use_max_precision is not None:
+        orientations.update({
+            'use_max_precision': orientations_use_max_precision
+        })
     orientations = validate_orientations(orientations)
     num_oris = orientations.get('quaternions').shape[0]
     if num_oris % 8 != 0:
