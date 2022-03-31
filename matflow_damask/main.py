@@ -86,7 +86,6 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
     return out
 
 
-@func_mapper(task='sample_texture', method='from_random')
 @func_mapper(task='modify_microstructure_seeds', method='scale')
 def modify_microstructure_seeds_scale(microstructure_seeds, factor):
     if factor is None:
