@@ -26,6 +26,7 @@ from damask_parse.utils import (
     add_volume_element_buffer_zones,
     validate_orientations,
     validate_volume_element,
+    spread_orientations,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -339,6 +340,12 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
         )
     }
     return out
+
+
+@func_mapper(task='modify_volume_element', method='spread_orientations')
+def modify_volume_element_spread_orientations(volume_element, phases, stddev_degrees):
+    VE = spread_orientations(volume_element, phases, sigmas=stddev_degrees)
+    return {"volume_element": VE}
 
 
 @func_mapper(task='modify_volume_element', method='new_orientations')
