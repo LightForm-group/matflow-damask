@@ -27,6 +27,7 @@ from damask_parse.utils import (
     add_volume_element_buffer_zones,
     validate_orientations,
     validate_volume_element,
+    spread_orientations,
 )
 from damask_parse import __version__ as damask_parse_version
 from matflow.scripting import get_wrapper_script
@@ -357,57 +358,9 @@ def modify_volume_element_add_buffer_zones(volume_element, buffer_sizes,
 
 
 @func_mapper(task='modify_volume_element', method='spread_orientations')
-def modify_volume_element_spread_orientations(volume_element, phase, max_spread_angle):
-    """
-    Include additional orientations within a limit around the orientation of a given phase.
-
-    append new idx and phase label to idx and phase label arrays, calculate oris within max range from given ori, append them to ori array. 
-    """
-    n_samples = 100
-
-    const_mat_idx = volume_element['constituent_material_idx']
-    const_ori_idx = volume_element['constituent_orientation_idx']
-    const_mat_frac = volume_element['constituent_material_fraction']
-    const_phase_lbl = volume_element['constituent_phase_label']
-    quats = volume_element['orientations']['quaternions']
-
-    phase_label_array_posn = np.where(volume_element['constituent_phase_label']==phase)
-    for posn in phase_label_array_posn:
-        base_quat = Quat(quats[int(posn)])
-        base_eulers = Quat.eulerAngles(base_quat)
-
-        sample = np.random.sample(size=(3, n_samples))
-        sample[0] *= 2*np.pi
-        sample[1] = np.arccos(sample[1])
-        sample[2] -= 0.5
-        sample[2] *= 2 * max_spread_angle * np.pi / 180
-
-        axes = np.empty((3, n_samples))
-        axes[0] = np.sin(sample[1]) * np.cos(sample[0])
-        axes[1] = np.sin(sample[1]) * np.sin(sample[0])
-        axes[2] = np.cos(sample[1])
-        angles = sample[2]
-
-        volume_element['constituent_material_fraction'][posn] = 1/(n_samples+1)
-        for new_ori in range(0, n_samples):
-            const_mat_idx = np.concatenate((const_mat_idx[:int(posn)], [int(posn)], const_mat_idx[int(posn):]))
-            const_ori_idx = np.concatenate((const_ori_idx[:int(posn)], [int(posn)], const_ori_idx[int(posn):]))
-            const_mat_frac = np.concatenate((const_mat_frac[:int(posn)], [1/(n_samples+1)], const_mat_frac[int(posn):]))
-            const_phase_lbl = np.concatenate((const_phase_lbl[:int(posn)], [phase], const_phase_lbl[int(posn):]))
-        
-            pert = Quat.fromAxisAngle(axes[:, new_ori], angles[new_ori])
-            perturbed_ori = pert * base_ori
-            quats = np.concatenate((quats[:int(posn)], [perturbed_ori.quatCoef], quats[int(posn):]))
-
-    volume_element['constituent_material_idx'] = const_mat_idx
-    volume_element['constituent_orientation_idx'] = const_ori_idx
-    volume_element['constituent_material_fraction'] = const_mat_frac
-    volume_element['constituent_phase_label'] = const_phase_lbl
-    volume_element['orientations']['quaternions'] = quats
-    
-    new_volume_element = copy.deepcopy(volume_element)
-    out = {'volume_element': new_volume_element}
-    return out
+def modify_volume_element_spread_orientations(volume_element, phase, stddev_degrees):
+    VE = spread_orientations(volume_element, phase, sigma=stddev_degrees)
+    return {"volume_element": VE}
 
 
 @func_mapper(task='modify_volume_element', method='new_orientations')
