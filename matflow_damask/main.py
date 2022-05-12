@@ -49,7 +49,8 @@ def read_orientation_coordinate_system(path):
 
 
 @func_mapper(task='generate_microstructure_seeds', method='random')
-def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=None,
+def seeds_from_random(size, num_grains, phase_label, phase_labels, phase_fractions 
+                      grid_size=None, RNG_seed=None,
                       orientation_coordinate_system=None,
                       orientations_use_max_precision=False):
     from damask import seeds
