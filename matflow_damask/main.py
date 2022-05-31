@@ -40,7 +40,7 @@ from matflow_damask import (
     register_output_file,
     software_versions,
 )
-from matflow_damask.utils import get_by_path, set_by_path
+from matflow_damask.utils import apply_single_crystal_parameter_perturbations, get_by_path, set_by_path
 
 
 def read_orientation_coordinate_system(path):
@@ -131,22 +131,20 @@ def write_damask_material(path, homogenization_schemes, volume_element,
                           texture_alignment_method,
                           orientations_use_max_precision):
 
-    # TODO: sort out texture alignment
+    path = Path(path)
 
-    # Apply a perturbation to a specific single-crystal parameter:
-    if (
-        single_crystal_parameters and
-        single_crystal_parameter_perturbation and
-        single_crystal_parameter_perturbation['perturbation']
-    ):
-        single_crystal_parameters = copy.deepcopy(single_crystal_parameters)
-        scale_factor = (1 + single_crystal_parameter_perturbation['perturbation'])
-        address = single_crystal_parameter_perturbation.get('address')
-        set_by_path(
+    # Apply perturbations to single-crystal parameters:
+    if single_crystal_parameters and single_crystal_parameter_perturbation:
+        single_crystal_parameters = apply_single_crystal_parameter_perturbations(
             single_crystal_parameters,
-            address,
-            get_by_path(single_crystal_parameters, address) * scale_factor,
+            single_crystal_parameter_perturbation,
         )
+        # HACK: write out single crystal parameters as a JSON file, so they can be parsed
+        # as an output of the task (e.g. as "perturbed_single_crystal_parameters"), if we
+        # want:
+        with path.parent.joinpath('single_crystal_parameters.json').open('wt') as fh:
+            json.dump(single_crystal_parameters, fh)
+
     phases = copy.deepcopy(phases)
 
     # Merge single-crystal properties into phases:
@@ -160,7 +158,6 @@ def write_damask_material(path, homogenization_schemes, volume_element,
             SC_params = single_crystal_parameters[SC_params_name]
             phases[phase_label]['mechanical']['plastic'].update(**SC_params)
 
-    path = Path(path)
     if orientations_use_max_precision is not None:
         volume_element['orientations'].update({
             'use_max_precision': orientations_use_max_precision
@@ -226,6 +223,11 @@ def write_damask_numerics(path, numerics):
         path = Path(path)
         write_numerics(path.parent, numerics, name=path.name)
 
+
+@output_mapper('perturbed_single_crystal_parameters', 'simulate_volume_element_loading', 'CP_FFT')
+def read_single_crystal_parameters_JSON(json_path):
+    with Path(json_path).open("rt") as fh:
+        return json.load(fh)
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
@@ -626,6 +628,23 @@ def generate_volume_element_single_voxel_grains(grid_size, size, homog_label,
     }
     volume_element = validate_volume_element(volume_element)
     return {'volume_element': volume_element}
+
+@func_mapper(task='optimise_single_crystal_parameters', method='bayesian')
+def optimise_single_crystal_parameters_bayesian(
+    perturbed_volume_element_responses,
+    perturbed_single_crystal_parameters,
+    single_crystal_parameter_perturbations,
+    experimental_tensile_test,
+    prior_distribution,
+):    
+    # select new parameters at random for now:
+    single_crystal_parameters_new = perturbed_single_crystal_parameters[0]
+    posterior_distribution = None
+
+    return {
+        'single_crystal_parameters': single_crystal_parameters_new,
+        'posterior_distribution': posterior_distribution,
+    }
 
 @software_versions()
 def get_versions(executable='DAMASK_spectral'):
