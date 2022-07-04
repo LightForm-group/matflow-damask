@@ -84,18 +84,28 @@ def apply_single_crystal_parameter_perturbations(single_crystal_params, pert):
     
     params = copy.deepcopy(single_crystal_params)
     if is_scale:
-        for pert_i, add_i in zip(perturbations, addresses):
+        for idx, (pert_i, add_i) in enumerate(zip(perturbations, addresses)):
             if add_i is not None:
                 scale_factor_i = (1 + pert_i)
-                set_by_path(params, add_i, get_by_path(params, add_i) * scale_factor_i)
+                new_val = get_by_path(params, add_i) * scale_factor_i
+                for eq_con in pert.get('equal_constraints', []):
+                    eq_con = sorted(eq_con)
+                    if idx > eq_con[0] and idx in eq_con[1:]:
+                        new_val = get_by_path(params, addresses[eq_con[0]])
+                set_by_path(params, add_i, new_val)
     elif is_std_dev:
-        for std_dev_i, add_i in zip(std_devs, addresses):
+        for idx, (std_dev_i, add_i) in enumerate(zip(std_devs, addresses)):
             if add_i is not None:
                 # draw a perturbation from a zero-mean normal distribution
                 rng = np.random.default_rng()
                 pert_i = rng.normal(loc=0.0, scale=std_dev_i)
                 scale_factor_i = (1 + pert_i)
-                set_by_path(params, add_i, get_by_path(params, add_i) * scale_factor_i)
+                new_val = get_by_path(params, add_i) * scale_factor_i
+                for eq_con in pert.get('equal_constraints', []):
+                    eq_con = sorted(eq_con)
+                    if idx > eq_con[0] and idx in eq_con[1:]:
+                        new_val = get_by_path(params, addresses[eq_con[0]])
+                set_by_path(params, add_i, new_val)
 
 
     return params
