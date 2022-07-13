@@ -618,7 +618,7 @@ def generate_volume_element_from_random_voronoi_dual_phase_orientations(
     
     oris['quaternions'] = np.vstack([sampled_oris_1, sampled_oris_2])
     
-    outputs = generate_volume_element_from_random_voronoi(
+    outputs = generate_volume_element_random_voronoi(
         microstructure_seeds,
         grid_size,
         homog_label,
