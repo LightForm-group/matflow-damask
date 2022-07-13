@@ -462,11 +462,18 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
     return out
 
 
-def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homog_label,
-                                           scale_morphology, scale_update_size,
-                                           buffer_phase_size, buffer_phase_label,
-                                           orientations_use_max_precision,
-                                           orientations=None):
+def generate_volume_element_from_random_voronoi(
+    microstructure_seeds,
+    grid_size,
+    homog_label,
+    scale_morphology,
+    scale_update_size,
+    buffer_phase_size,
+    buffer_phase_label,
+    orientations_use_max_precision,
+    orientations=None,
+    orientations_idx=None,
+):
     from damask import Grid
 
     grid_obj = Grid.from_Voronoi_tessellation(
@@ -489,7 +496,22 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
 
         grid_obj = grid_scaled
 
-    phase_labels = [microstructure_seeds['phase_label']]
+    const_phase_lab = np.array(microstructure_seeds['phase_labels'])[
+        np.array(microstructure_seeds['phase_labels_idx'])
+    ]
+
+    num_grains = len(microstructure_seeds['position'])
+    if orientations is not None:
+        oris = orientations
+    else:
+        oris = copy.deepcopy(microstructure_seeds['orientations'])
+    oris.update({'use_max_precision': orientations_use_max_precision})
+
+    if orientations_idx is not None:
+        ori_idx = orientations_idx
+    else:
+        ori_idx = np.arange(num_grains)
+
     if buffer_phase_size is not None:
         original_cells = grid_obj.cells
         original_size = grid_obj.size
@@ -501,17 +523,26 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
         grid_canvased.size = new_size
 
         grid_obj = grid_canvased
-        phase_labels.append(buffer_phase_label)
 
-    oris = orientations or microstructure_seeds['orientations']
-    oris.update({'use_max_precision': orientations_use_max_precision})
+        if buffer_phase_label is None:
+            raise ValueError(
+                f"Must specify `buffer_phase_label` if specifying `buffer_phase_size`."
+            )
+        const_phase_lab = np.append(const_phase_lab, [buffer_phase_label])
+        oris['quaternions'] = np.vstack([oris['quaternions'], np.array([[1, 0, 0, 0]])])
+        ori_idx = np.append(ori_idx, [oris['quaternions'].shape[0] - 1])
+        num_grains += 1
+
     volume_element = {
+        'size': grid_obj.size.astype(float).tolist(),
+        'grid_size': grid_obj.cells.tolist(),
         'orientations': oris,
         'element_material_idx': grid_obj.material,
-        'grid_size': grid_obj.cells.tolist(),
-        'size': grid_obj.size.astype(float).tolist(),
-        'phase_labels': phase_labels,
-        'homog_label': homog_label,
+        'constituent_material_idx': np.arange(num_grains),
+        'constituent_material_fraction': np.ones(num_grains),
+        'constituent_phase_label': const_phase_lab,
+        'constituent_orientation_idx': ori_idx,
+        'material_homog': np.full(num_grains, homog_label),
     }
     volume_element = validate_volume_element(volume_element)
     return {'volume_element': volume_element}
