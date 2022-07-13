@@ -462,7 +462,7 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
     return out
 
 
-def generate_volume_element_from_random_voronoi(
+def generate_volume_element_random_voronoi(
     microstructure_seeds,
     grid_size,
     homog_label,
