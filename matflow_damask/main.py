@@ -49,11 +49,44 @@ def read_orientation_coordinate_system(path):
 
 
 @func_mapper(task='generate_microstructure_seeds', method='random')
-def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=None,
-                      orientation_coordinate_system=None,
-                      orientations_use_max_precision=False):
+def seeds_from_random(
+    size,
+    num_grains,
+    phase_label=None,
+    phase_labels=None,
+    phase_fractions=None,
+    grid_size=None,
+    RNG_seed=None,
+    orientation_coordinate_system=None,
+    orientations_use_max_precision=False,
+):
     from damask import seeds
     from damask import Rotation
+
+    if phase_label is not None and phase_labels is not None:
+        raise ValueError(f"Specify exactly one of `phase_label` and `phase_labels`.")
+
+    if phase_labels is None:
+        phase_labels = [phase_label]
+        phase_labels_idx = np.zeros(num_grains)
+
+    num_phase_labels = len(phase_labels)
+    if phase_fractions is None:        
+        phase_fractions = [1/num_phase_labels for _ in phase_labels]
+    else:
+        if len(phase_fractions) != len(phase_labels):
+            raise ValueError(
+                f"Length of `phase_fractions` ({len(phase_fractions)}) must be equal to "
+                f"length of `phase_labels` ({len(phase_labels)})."
+            )
+        if sum(phase_fractions) != 1.0:
+            raise ValueError(
+                f"Sum of `phase_fractions` ({sum(phase_fractions)}) must sum to one."
+            )
+    
+    # Assign phases to labels, randomly:
+    rng = np.random.default_rng(seed=RNG_seed)
+    phase_labels_idx = rng.choice(a=num_phase_labels, size=num_grains, p=phase_fractions)
 
     size = np.array(size)
     grid_size = grid_size and np.array(grid_size)
@@ -81,7 +114,9 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
             'orientations': oris,
             'size': size,
             'random_seed': None,
-            'phase_label': phase_label,
+            'phase_labels': phase_labels,
+            'phase_labels_idx': phase_labels_idx,
+            'phase_fractions': phase_fractions,
         }
     }
     return out
