@@ -66,6 +66,14 @@ def seeds_from_random(
     if phase_label is not None and phase_labels is not None:
         raise ValueError(f"Specify exactly one of `phase_label` and `phase_labels`.")
 
+    if (
+        (phase_label is not None and not isinstance(phase_label, str)) or 
+        (phase_labels is not None and not isinstance(phase_labels, list))
+    ):
+        raise ValueError(
+            f"Specify `phase_label` as a string, or `phase_labels` as a list of strings."
+        )
+
     if phase_labels is None:
         phase_labels = [phase_label]
         phase_labels_idx = np.zeros(num_grains)
