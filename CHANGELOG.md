@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.27] - 2022.08.08
+
+### Fixed
+
+- Fix `simulate_volume_element_loading` output mapper for reading the single crystal parameter JSON file, which is only written out if the SC parameter are perturbed.
+
 ## [0.1.26] - 2022.08.08
 
 ### Added
