@@ -1,5 +1,20 @@
 # Change Log
 
+## [0.1.26] - 2022.08.08
+
+### Added
+
+- Add `spread_orientations` method to task `modify_volume_element`
+- Add `generate_volume_element_from_random_voronoi_dual_phase_orientations`
+
+### Changed
+
+- Support specifying multiple phases in `seeds_from_random`
+- Generalise `generate_volume_element_random_voronoi` to support multiple phase labels
+- Parameter `single_crystal_parameter_perturbation` in task `simulate_volume_element_loading`:
+  - support specifying a relative standard deviation (`std_deviations`) of a normal distribution to be sampled.
+  - support `equal_constraints` for setting multiple perturbed values to be equal (e.g. initial and saturated CRSS values)
+
 ## [0.1.25] - 2022.03.11
 
 ### Added
