@@ -49,11 +49,52 @@ def read_orientation_coordinate_system(path):
 
 
 @func_mapper(task='generate_microstructure_seeds', method='random')
-def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=None,
-                      orientation_coordinate_system=None,
-                      orientations_use_max_precision=False):
+def seeds_from_random(
+    size,
+    num_grains,
+    phase_label=None,
+    phase_labels=None,
+    phase_fractions=None,
+    grid_size=None,
+    RNG_seed=None,
+    orientation_coordinate_system=None,
+    orientations_use_max_precision=False,
+):
     from damask import seeds
     from damask import Rotation
+
+    if phase_label is not None and phase_labels is not None:
+        raise ValueError(f"Specify exactly one of `phase_label` and `phase_labels`.")
+
+    if (
+        (phase_label is not None and not isinstance(phase_label, str)) or 
+        (phase_labels is not None and not isinstance(phase_labels, list))
+    ):
+        raise ValueError(
+            f"Specify `phase_label` as a string, or `phase_labels` as a list of strings."
+        )
+
+    if phase_labels is None:
+        phase_labels = [phase_label]
+        phase_labels_idx = np.zeros(num_grains)
+
+    num_phase_labels = len(phase_labels)
+    if phase_fractions is None:        
+        phase_fractions = [1/num_phase_labels for _ in phase_labels]
+    else:
+        if len(phase_fractions) != len(phase_labels):
+            raise ValueError(
+                f"Length of `phase_fractions` ({len(phase_fractions)}) must be equal to "
+                f"length of `phase_labels` ({len(phase_labels)})."
+            )
+        if sum(phase_fractions) != 1.0:
+            raise ValueError(
+                f"Sum of `phase_fractions` ({sum(phase_fractions)}) must sum to one."
+            )
+    
+    # Assign phases to labels, randomly:
+    rng = np.random.default_rng(seed=RNG_seed)
+    phase_labels_idx = rng.choice(a=num_phase_labels, size=num_grains, p=phase_fractions)
 
     size = np.array(size)
     grid_size = grid_size and np.array(grid_size)
@@ -81,7 +122,9 @@ def seeds_from_random(size, num_grains, phase_label, grid_size=None, RNG_seed=No
             'orientations': oris,
             'size': size,
             'random_seed': None,
-            'phase_label': phase_label,
+            'phase_labels': phase_labels,
+            'phase_labels_idx': phase_labels_idx,
+            'phase_fractions': phase_fractions,
         }
     }
     return out
@@ -427,11 +470,18 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
     return out
 
 
-def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homog_label,
-                                           scale_morphology, scale_update_size,
-                                           buffer_phase_size, buffer_phase_label,
-                                           orientations_use_max_precision,
-                                           orientations=None):
+def generate_volume_element_random_voronoi(
+    microstructure_seeds,
+    grid_size,
+    homog_label,
+    scale_morphology,
+    scale_update_size,
+    buffer_phase_size,
+    buffer_phase_label,
+    orientations_use_max_precision,
+    orientations=None,
+    orientations_idx=None,
+):
     from damask import Grid
 
     grid_obj = Grid.from_Voronoi_tessellation(
@@ -454,7 +504,22 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
 
         grid_obj = grid_scaled
 
-    phase_labels = [microstructure_seeds['phase_label']]
+    const_phase_lab = np.array(microstructure_seeds['phase_labels'])[
+        np.array(microstructure_seeds['phase_labels_idx'])
+    ]
+
+    num_grains = len(microstructure_seeds['position'])
+    if orientations is not None:
+        oris = orientations
+    else:
+        oris = copy.deepcopy(microstructure_seeds['orientations'])
+    oris.update({'use_max_precision': orientations_use_max_precision})
+
+    if orientations_idx is not None:
+        ori_idx = orientations_idx
+    else:
+        ori_idx = np.arange(num_grains)
+
     if buffer_phase_size is not None:
         original_cells = grid_obj.cells
         original_size = grid_obj.size
@@ -466,20 +531,114 @@ def generate_volume_element_random_voronoi(microstructure_seeds, grid_size, homo
         grid_canvased.size = new_size
 
         grid_obj = grid_canvased
-        phase_labels.append(buffer_phase_label)
 
-    oris = orientations or microstructure_seeds['orientations']
-    oris.update({'use_max_precision': orientations_use_max_precision})
+        if buffer_phase_label is None:
+            raise ValueError(
+                f"Must specify `buffer_phase_label` if specifying `buffer_phase_size`."
+            )
+        const_phase_lab = np.append(const_phase_lab, [buffer_phase_label])
+        oris['quaternions'] = np.vstack([oris['quaternions'], np.array([[1, 0, 0, 0]])])
+        ori_idx = np.append(ori_idx, [oris['quaternions'].shape[0] - 1])
+        num_grains += 1
+
     volume_element = {
+        'size': grid_obj.size.astype(float).tolist(),
+        'grid_size': grid_obj.cells.tolist(),
         'orientations': oris,
         'element_material_idx': grid_obj.material,
-        'grid_size': grid_obj.cells.tolist(),
-        'size': grid_obj.size.astype(float).tolist(),
-        'phase_labels': phase_labels,
-        'homog_label': homog_label,
+        'constituent_material_idx': np.arange(num_grains),
+        'constituent_material_fraction': np.ones(num_grains),
+        'constituent_phase_label': const_phase_lab,
+        'constituent_orientation_idx': ori_idx,
+        'material_homog': np.full(num_grains, homog_label),
     }
     volume_element = validate_volume_element(volume_element)
     return {'volume_element': volume_element}
+
+@func_mapper(
+    task='generate_volume_element',
+    method='random_voronoi_from_dual_phase_orientations'
+)
+def generate_volume_element_from_random_voronoi_dual_phase_orientations(
+    microstructure_seeds,
+    grid_size,
+    homog_label,
+    scale_morphology,
+    scale_update_size,
+    buffer_phase_size,
+    buffer_phase_label,
+    orientations_use_max_precision,
+    orientations_phase_1,
+    orientations_phase_2,
+    RNG_seed=None,
+):
+
+    if len(microstructure_seeds['phase_labels']) != 2:
+        raise ValueError(
+            f"There are not two phase labels to correspond to two orientation sets. "
+            f"`phase_labels` is: {microstructure_seeds['phase_labels']}.")
+
+    ori_1 = validate_orientations(orientations_phase_1)
+    ori_2 = validate_orientations(orientations_phase_2)
+    oris = copy.deepcopy(ori_1)
+    
+    phase_labels_idx = microstructure_seeds['phase_labels_idx']
+    phase_labels = microstructure_seeds['phase_labels']
+    num_grains = len(phase_labels_idx)
+    _, counts = np.unique(phase_labels_idx, return_counts=True)
+    
+    num_ori_1 = ori_1['quaternions'].shape[0]
+    num_ori_2 = ori_2['quaternions'].shape[0]
+    sampled_oris_1 = ori_1['quaternions']
+    sampled_oris_2 = ori_2['quaternions']
+
+    rng = np.random.default_rng(seed=RNG_seed)
+
+    # If there are more orientations than phase label assignments, choose a random subset:
+    if num_ori_1 != counts[0]:
+        try:
+            ori_1_idx = rng.choice(a=num_ori_1, size=counts[0], replace=False)
+        except ValueError as err:
+            raise ValueError(
+                f"Probably an insufficient number of `orientations_phase_1` "
+                f"({num_ori_1} given for phase {phase_labels[0]!r}, whereas {counts[0]} "
+                f"needed). Caught ValueError is: {err}"
+            )
+        sampled_oris_1 = sampled_oris_1[ori_1_idx]
+    if num_ori_2 != counts[1]:
+        try:
+            ori_2_idx = rng.choice(a=num_ori_2, size=counts[1], replace=False)
+        except ValueError as err:
+            raise ValueError(
+                f"Probably an insufficient number of `orientations_phase_2` "
+                f"({num_ori_2} given for phase {phase_labels[1]!r}, whereas {counts[1]} "
+                f"needed). Caught ValueError is: {err}"
+            )
+        sampled_oris_2 = sampled_oris_2[ori_2_idx]
+
+    ori_idx = np.ones(num_grains) * np.nan
+    for idx, i in enumerate(counts):
+        ori_idx[phase_labels_idx == idx] = np.arange(i) + np.sum(counts[:idx])
+
+    if np.any(np.isnan(ori_idx)):
+        raise RuntimeError("Not all phases have an orientation assigned!")
+    ori_idx = ori_idx.astype(int)
+    
+    oris['quaternions'] = np.vstack([sampled_oris_1, sampled_oris_2])
+    
+    outputs = generate_volume_element_random_voronoi(
+        microstructure_seeds,
+        grid_size,
+        homog_label,
+        scale_morphology,
+        scale_update_size,
+        buffer_phase_size,
+        buffer_phase_label,
+        orientations_use_max_precision,
+        orientations=oris,
+        orientations_idx=ori_idx,
+    )
+    return outputs
 
 
 @func_mapper(task='generate_volume_element', method='from_damask_input_files')
