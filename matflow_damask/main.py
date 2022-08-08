@@ -269,8 +269,12 @@ def write_damask_numerics(path, numerics):
 
 @output_mapper('perturbed_single_crystal_parameters', 'simulate_volume_element_loading', 'CP_FFT')
 def read_single_crystal_parameters_JSON(json_path):
-    with Path(json_path).open("rt") as fh:
-        return json.load(fh)
+    json_path = Path(json_path)
+    if json_path.is_file():
+        with Path(json_path).open("rt") as fh:
+            return json.load(fh)
+    else:
+        return None
 
 @output_mapper('volume_element_response', 'simulate_volume_element_loading', 'CP_FFT')
 def read_damask_hdf5_file(hdf5_path, incremental_data=None, volume_data=None,
