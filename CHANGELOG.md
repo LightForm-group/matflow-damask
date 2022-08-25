@@ -5,6 +5,7 @@
 ### Added
 
 - Add `periodic` boolean option (default True) to `generate_volume_element` tasks.
+- Add `modify_volume_element`/`grid_size` method to change VE grid size
 
 ## [0.1.27] - 2022.08.08
 
