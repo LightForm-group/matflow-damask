@@ -437,7 +437,7 @@ def visualise_volume_element(volume_element):
 def generate_volume_element_random_voronoi_2(microstructure_seeds, grid_size, homog_label,
                                              scale_morphology, scale_update_size,
                                              buffer_phase_size, buffer_phase_label,
-                                             orientations_use_max_precision):
+                                             orientations_use_max_precision, periodic):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         grid_size,
@@ -448,6 +448,7 @@ def generate_volume_element_random_voronoi_2(microstructure_seeds, grid_size, ho
         buffer_phase_label,
         orientations_use_max_precision,
         orientations=None,
+        periodic=periodic,
     )
     return out
 
@@ -459,7 +460,8 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
                                                           buffer_phase_size,
                                                           buffer_phase_label,
                                                           orientations,
-                                                          orientations_use_max_precision):
+                                                          orientations_use_max_precision, 
+                                                          periodic):
     out = generate_volume_element_random_voronoi(
         microstructure_seeds,
         grid_size,
@@ -470,6 +472,7 @@ def generate_volume_element_random_voronoi_orientations_2(microstructure_seeds, 
         buffer_phase_label,
         orientations_use_max_precision,
         orientations=orientations,
+        periodic=periodic,
     )
     return out
 
@@ -485,13 +488,15 @@ def generate_volume_element_random_voronoi(
     orientations_use_max_precision,
     orientations=None,
     orientations_idx=None,
+    periodic=True,
 ):
     from damask import Grid
 
     grid_obj = Grid.from_Voronoi_tessellation(
         cells=np.array(grid_size),
         size=np.array(microstructure_seeds['size']),
-        seeds=np.array(microstructure_seeds['position'])
+        seeds=np.array(microstructure_seeds['position']),
+        periodic=periodic,
     )
 
     if scale_morphology is not None:
@@ -574,7 +579,8 @@ def generate_volume_element_from_random_voronoi_dual_phase_orientations(
     orientations_use_max_precision,
     orientations_phase_1,
     orientations_phase_2,
-    RNG_seed=None,
+    RNG_seed,
+    periodic,
 ):
 
     if len(microstructure_seeds['phase_labels']) != 2:
@@ -641,6 +647,7 @@ def generate_volume_element_from_random_voronoi_dual_phase_orientations(
         orientations_use_max_precision,
         orientations=oris,
         orientations_idx=ori_idx,
+        periodic=periodic,
     )
     return outputs
 

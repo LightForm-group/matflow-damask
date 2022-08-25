@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.28] - 2022.xx.xx
+
+### Added
+
+- Add `periodic` boolean option (default True) to `generate_volume_element` tasks.
+
 ## [0.1.27] - 2022.08.08
 
 ### Fixed
