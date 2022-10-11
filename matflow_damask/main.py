@@ -539,6 +539,8 @@ def generate_volume_element_random_voronoi(
         oris = orientations
     else:
         oris = copy.deepcopy(microstructure_seeds['orientations'])
+
+    oris = validate_orientations(oris)
     oris.update({'use_max_precision': orientations_use_max_precision})
 
     if orientations_idx is not None:
