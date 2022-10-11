@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.1.29] - 2022.10.11
+
+### Fixed
+
+- Fix bug in `generate_volume_element_random_voronoi` function where supplied orientations are not validated. 
+
 ## [0.1.28] - 2022.09.05
 
 ### Added
